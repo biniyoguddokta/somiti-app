@@ -25,6 +25,10 @@ jobs:
           channel: 'stable'
           cache: true
 
+      # 👇 এই নতুন লাইনটি যোগ করা হয়েছে 👇
+      - name: Create missing Android wrapper
+        run: flutter create . --platforms android
+
       - name: Install dependencies
         run: flutter pub get
 
