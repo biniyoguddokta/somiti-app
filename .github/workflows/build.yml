@@ -22,14 +22,25 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          channel: stable
           cache: true
 
-      - name: Create missing Android wrapper
-        run: flutter create --project-name somiti_app --platforms android .
+      - name: Check Flutter project
+        run: |
+          test -f pubspec.yaml
+          grep -n "http:" pubspec.yaml || true
+
+      - name: Create Android wrapper if needed
+        run: |
+          if [ ! -f android/gradlew ]; then
+            flutter create --project-name somiti_app --platforms android .
+          fi
 
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Verify dependencies
+        run: flutter pub deps
 
       - name: Build release APK
         run: flutter build apk --release
