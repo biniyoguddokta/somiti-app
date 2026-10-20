@@ -1,5 +1,5 @@
 name: somiti_app
-description: A new Flutter project for Somiti App.
+description: A new Flutter project.
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -10,6 +10,8 @@ dependencies:
   flutter:
     sdk: flutter
   http: ^1.1.0
+  google_fonts: ^6.1.0
+  carousel_slider: ^4.2.1
 
 dev_dependencies:
   flutter_test:
@@ -18,3 +20,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/  # এখানে আপনার ছবিগুলো থাকবে
