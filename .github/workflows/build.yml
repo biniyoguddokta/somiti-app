@@ -30,13 +30,21 @@ jobs:
     - name: Add Internet Permission
       run: sed -i 's/<application/<uses-permission android:name="android.permission.INTERNET"\/>\n    <application/' android/app/src/main/AndroidManifest.xml
 
-    # 🔥 এই অংশটুকু নতুন যোগ করা হয়েছে (R8 অপটিমাইজেশন বন্ধ করার জন্য)
+    # 🔥 R8 অপটিমাইজেশন বন্ধ করার আপডেটেড ধাপ
     - name: Disable R8 Minification
       run: |
-        sed -i 's/minifyEnabled true/minifyEnabled false/g' android/app/build.gradle
-        sed -i 's/shrinkResources true/shrinkResources false/g' android/app/build.gradle
-        sed -i 's/minifyEnabled true/minifyEnabled false/g' android/app/build.gradle.kts
-        sed -i 's/shrinkResources true/shrinkResources false/g' android/app/build.gradle.kts
+        if [ -f android/app/build.gradle.kts ]; then
+          echo "build.gradle.kts found. Disabling R8..."
+          sed -i 's/isMinifyEnabled true/isMinifyEnabled false/g' android/app/build.gradle.kts
+          sed -i 's/isShrinkResources true/isShrinkResources false/g' android/app/build.gradle.kts
+        elif [ -f android/app/build.gradle ]; then
+          echo "build.gradle found. Disabling R8..."
+          sed -i 's/minifyEnabled true/minifyEnabled false/g' android/app/build.gradle
+          sed -i 's/shrinkResources true/shrinkResources false/g' android/app/build.gradle
+        else
+          echo "No build.gradle or build.gradle.kts found. Creating gradle.properties fallback..."
+          echo "android.enableR8=false" >> android/gradle.properties
+        fi
 
     - name: Build APK
       run: flutter build apk --release
