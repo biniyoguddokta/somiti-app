@@ -11,7 +11,7 @@ dependencies:
     sdk: flutter
   http: ^1.1.0
   google_fonts: ^6.1.0
-  carousel_slider: ^4.2.1
+  carousel_slider: ^5.0.0
 
 dev_dependencies:
   flutter_test:
@@ -20,5 +20,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  assets:
-    - assets/  # এখানে আপনার ছবিগুলো থাকবে
+  # আপাতত assets বন্ধ রাখলাম, পরের ধাপে আসল ছবি দিয়ে চালু করবো
+  # assets:
+  #   - assets/
