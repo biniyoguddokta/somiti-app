@@ -11,7 +11,7 @@ class ApiService {
       final response = await http.get(Uri.parse('$baseUrl?action=getAllMembers'));
       if (response.statusCode == 200) {
         if (response.body.contains("<!DOCTYPE html>")) {
-          return {"error": "API লিংকটি ভুল। Deploy আবার চেক করুন।"};
+          return {"error": "API লিংকটি ভুল বা গুগল লগইন চাচ্ছে। Deploy আবার চেক করুন।"};
         }
         return jsonDecode(response.body);
       } else {
@@ -44,6 +44,10 @@ class ApiService {
       );
 
       if (response.statusCode == 200) {
+        // HTML পেজ আসলে সেটি হ্যান্ডেল করা
+        if (response.body.contains("<!DOCTYPE html>")) {
+           return {"status": "error", "message": "গুগল অনুমতি চাচ্ছে। Apps Script-এ 'New version' দিয়ে Deploy করুন।"};
+        }
         return jsonDecode(response.body);
       } else {
         return {"status": "error", "message": "সার্ভার এরর: ${response.statusCode}"};
