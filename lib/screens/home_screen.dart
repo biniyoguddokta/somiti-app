@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'more_screen.dart'; // নতুন পেজটি ইমপোর্ট করা হলো
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -11,7 +12,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
-  // নতুন ভার্সন অনুযায়ী CarouselSliderController ব্যবহার করা হলো
   final CarouselSliderController _carouselController = CarouselSliderController();
   int _currentBanner = 0;
 
@@ -21,9 +21,21 @@ class _HomeScreenState extends State<HomeScreen> {
     'https://via.placeholder.com/600x200/F44336/FFFFFF?text=Banner+3',
   ];
 
+  // নিচের নেভিগেশনে ক্লিক করলে যে পেজগুলো আসবে
+  final List<Widget> _pages = [
+    const HomeContent(), // হোমের মূল অংশ
+    const Center(child: Text("সদস্য পেজ (শীঘ্রই আসছে)")), 
+    const Center(child: Text("কালেকশন পেজ (শীঘ্রই আসছে)")),
+    const Center(child: Text("রিপোর্ট পেজ (শীঘ্রই আসছে)")),
+    const MoreScreen(), // আমাদের নতুন তৈরি করা পেজ
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      body: SafeArea(
+        child: _pages[_selectedIndex], // সিলেক্ট করা পেজ দেখাবে
+      ),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
@@ -42,184 +54,200 @@ class _HomeScreenState extends State<HomeScreen> {
           BottomNavigationBarItem(icon: Icon(Icons.grid_view), label: "আরও"),
         ],
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Icon(Icons.menu, color: Color(0xFF00796B), size: 30),
-                    Row(
-                      children: const [
-                        Icon(Icons.person, color: Color(0xFF00796B)),
-                        SizedBox(width: 15),
-                        Icon(Icons.headset_mic, color: Color(0xFF00796B)),
-                        SizedBox(width: 15),
-                        Icon(Icons.notifications, color: Color(0xFF00796B)),
-                        SizedBox(width: 15),
-                        Icon(Icons.help_outline, color: Color(0xFF00796B)),
-                      ],
-                    )
-                  ],
-                ),
-              ),
-              CarouselSlider(
-                carouselController: _carouselController,
-                options: CarouselOptions(
-                  height: 150,
-                  autoPlay: true,
-                  autoPlayInterval: const Duration(seconds: 3),
-                  enlargeCenterPage: true,
-                  viewportFraction: 0.9,
-                  onPageChanged: (index, reason) {
-                    setState(() {
-                      _currentBanner = index;
-                    });
-                  },
-                ),
-                items: banners.map((bannerUrl) {
-                  return Builder(
-                    builder: (BuildContext context) {
-                      return Container(
-                        width: MediaQuery.of(context).size.width,
-                        margin: const EdgeInsets.symmetric(horizontal: 5.0),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(15),
-                          image: DecorationImage(
-                            image: NetworkImage(bannerUrl),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: banners.asMap().entries.map((entry) {
-                  return GestureDetector(
-                    onTap: () => _carouselController.animateToPage(entry.key),
-                    child: Container(
-                      width: 8.0,
-                      height: 8.0,
-                      margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: _currentBanner == entry.key ? const Color(0xFF00796B) : Colors.grey[300],
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-                padding: const EdgeInsets.all(15),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE53935),
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.lock_clock, color: Colors.white, size: 35),
-                    const SizedBox(width: 15),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text("সদস্য যাদের জমা বকেয়া আছে", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                          SizedBox(height: 5),
-                          Text("বকেয়া গুলো দেখতে ট্যাপ করুন", style: TextStyle(color: Colors.white70, fontSize: 14)),
-                        ],
-                      ),
-                    ),
-                    const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 15),
-                child: Row(
+    );
+  }
+}
+
+// হোম স্ক্রিনের মূল ডিজাইন এখানে আলাদা ক্লাস হিসেবে রাখা হলো
+class HomeContent extends StatefulWidget {
+  const HomeContent({super.key});
+
+  @override
+  State<HomeContent> createState() => _HomeContentState();
+}
+
+class _HomeContentState extends State<HomeContent> {
+  final CarouselSliderController _carouselController = CarouselSliderController();
+  int _currentBanner = 0;
+
+  final List<String> banners = [
+    'https://via.placeholder.com/600x200/FFC107/000000?text=Banner+1',
+    'https://via.placeholder.com/600x200/00796B/FFFFFF?text=Banner+2',
+    'https://via.placeholder.com/600x200/F44336/FFFFFF?text=Banner+3',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Icon(Icons.menu, color: Color(0xFF00796B), size: 30),
+                Row(
                   children: const [
-                    Text("শুভ সকাল, ", style: TextStyle(fontSize: 16, color: Colors.grey)),
-                    Text("Admin ", style: TextStyle(fontSize: 16, color: Colors.blue, fontWeight: FontWeight.bold)),
+                    Icon(Icons.person, color: Color(0xFF00796B)),
+                    SizedBox(width: 15),
+                    Icon(Icons.headset_mic, color: Color(0xFF00796B)),
+                    SizedBox(width: 15),
+                    Icon(Icons.notifications, color: Color(0xFF00796B)),
+                    SizedBox(width: 15),
+                    Icon(Icons.help_outline, color: Color(0xFF00796B)),
                   ],
-                ),
-              ),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 15),
-                child: Text("বিনিয়োগ উদ্যোক্তা", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-              ),
-              const SizedBox(height: 20),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 15),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildInfoCard("হাতে নগদ", "৳ ০", Icons.account_balance_wallet, Colors.blue),
-                    _buildInfoCard("আজকের জমা", "৳ ০", Icons.arrow_downward, Colors.green),
-                    _buildInfoCard("আজকের খরচ", "৳ ০", Icons.arrow_upward, Colors.orange),
-                    _buildInfoCard("সব লেনদেন", "৳ ০", Icons.receipt_long, Colors.red),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 15),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildActionButton("জমা", Icons.money, const Color(0xFF43A047)),
-                    _buildActionButton("খরচ", Icons.shopping_bag, const Color(0xFFE53935)),
-                    _buildActionButton("আয়", Icons.savings, const Color(0xFF00897B)),
-                    _buildActionButton("বিনিয়োগ", Icons.menu_book, const Color(0xFF8E24AA)),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 30),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 15),
-                child: Text("মডিউল ও ফিচার", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey)),
-              ),
-              const SizedBox(height: 15),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 15),
-                child: GridView.count(
-                  crossAxisCount: 3,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  mainAxisSpacing: 15,
-                  crossAxisSpacing: 15,
-                  childAspectRatio: 1,
-                  children: [
-                    _buildModuleIcon(Icons.people, "সদস্য", Colors.blue),
-                    _buildModuleIcon(Icons.person_add, "সদস্য যোগ", Colors.green),
-                    _buildModuleIcon(Icons.group, "কমিটি", Colors.orange),
-                    _buildModuleIcon(Icons.assignment_ind, "দায়িত্ব", Colors.purple),
-                    _buildModuleIcon(Icons.pie_chart, "শেয়ার", Colors.deepPurple),
-                    _buildModuleIcon(Icons.bar_chart, "রিপোর্ট", Colors.indigo),
-                    _buildModuleIcon(Icons.fastfood, "ফান্ড", Colors.blueAccent),
-                    _buildModuleIcon(Icons.menu_book, "খতিয়ান", Colors.orangeAccent),
-                    _buildModuleIcon(Icons.account_balance, "ব্যাংক", Colors.lightBlue),
-                    _buildModuleIcon(Icons.receipt, "ভাউচার", Colors.blue),
-                    _buildModuleIcon(Icons.fact_check, "অনুমোদন", Colors.green),
-                    _buildModuleIcon(Icons.point_of_sale, "ক্যাশ ক্রজিং", Colors.orange),
-                    _buildModuleIcon(Icons.campaign, "নোটিশ", Colors.deepOrange),
-                    _buildModuleIcon(Icons.inventory, "স্টক", Colors.purple),
-                    _buildModuleIcon(Icons.people_outline, "পরিচালক", Colors.blue),
-                    _buildModuleIcon(Icons.grid_view, "আরও", Colors.grey),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-            ],
+                )
+              ],
+            ),
           ),
-        ),
+          CarouselSlider(
+            carouselController: _carouselController,
+            options: CarouselOptions(
+              height: 150,
+              autoPlay: true,
+              autoPlayInterval: const Duration(seconds: 3),
+              enlargeCenterPage: true,
+              viewportFraction: 0.9,
+              onPageChanged: (index, reason) {
+                setState(() { _currentBanner = index; });
+              },
+            ),
+            items: banners.map((bannerUrl) {
+              return Builder(
+                builder: (BuildContext context) {
+                  return Container(
+                    width: MediaQuery.of(context).size.width,
+                    margin: const EdgeInsets.symmetric(horizontal: 5.0),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(15),
+                      image: DecorationImage(image: NetworkImage(bannerUrl), fit: BoxFit.cover),
+                    ),
+                  );
+                },
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: banners.asMap().entries.map((entry) {
+              return GestureDetector(
+                onTap: () => _carouselController.animateToPage(entry.key),
+                child: Container(
+                  width: 8.0,
+                  height: 8.0,
+                  margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _currentBanner == entry.key ? const Color(0xFF00796B) : Colors.grey[300],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+            padding: const EdgeInsets.all(15),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE53935),
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.lock_clock, color: Colors.white, size: 35),
+                const SizedBox(width: 15),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Text("সদস্য যাদের জমা বকেয়া আছে", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                      SizedBox(height: 5),
+                      Text("বকেয়া গুলো দেখতে ট্যাপ করুন", style: TextStyle(color: Colors.white70, fontSize: 14)),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 15),
+            child: Row(
+              children: const [
+                Text("শুভ সকাল, ", style: TextStyle(fontSize: 16, color: Colors.grey)),
+                Text("Admin ", style: TextStyle(fontSize: 16, color: Colors.blue, fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 15),
+            child: Text("বিনিয়োগ উদ্যোক্তা", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 15),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildInfoCard("হাতে নগদ", "৳ ০", Icons.account_balance_wallet, Colors.blue),
+                _buildInfoCard("আজকের জমা", "৳ ০", Icons.arrow_downward, Colors.green),
+                _buildInfoCard("আজকের খরচ", "৳ ০", Icons.arrow_upward, Colors.orange),
+                _buildInfoCard("সব লেনদেন", "৳ ০", Icons.receipt_long, Colors.red),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 15),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildActionButton("জমা", Icons.money, const Color(0xFF43A047)),
+                _buildActionButton("খরচ", Icons.shopping_bag, const Color(0xFFE53935)),
+                _buildActionButton("আয়", Icons.savings, const Color(0xFF00897B)),
+                _buildActionButton("বিনিয়োগ", Icons.menu_book, const Color(0xFF8E24AA)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 30),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 15),
+            child: Text("মডিউল ও ফিচার", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey)),
+          ),
+          const SizedBox(height: 15),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 15),
+            child: GridView.count(
+              crossAxisCount: 3,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 15,
+              crossAxisSpacing: 15,
+              childAspectRatio: 1,
+              children: [
+                _buildModuleIcon(Icons.people, "সদস্য", Colors.blue),
+                _buildModuleIcon(Icons.person_add, "সদস্য যোগ", Colors.green),
+                _buildModuleIcon(Icons.group, "কমিটি", Colors.orange),
+                _buildModuleIcon(Icons.assignment_ind, "দায়িত্ব", Colors.purple),
+                _buildModuleIcon(Icons.pie_chart, "শেয়ার", Colors.deepPurple),
+                _buildModuleIcon(Icons.bar_chart, "রিপোর্ট", Colors.indigo),
+                _buildModuleIcon(Icons.fastfood, "ফান্ড", Colors.blueAccent),
+                _buildModuleIcon(Icons.menu_book, "খতিয়ান", Colors.orangeAccent),
+                _buildModuleIcon(Icons.account_balance, "ব্যাংক", Colors.lightBlue),
+                _buildModuleIcon(Icons.receipt, "ভাউচার", Colors.blue),
+                _buildModuleIcon(Icons.fact_check, "অনুমোদন", Colors.green),
+                _buildModuleIcon(Icons.point_of_sale, "ক্যাশ ক্রজিং", Colors.orange),
+                _buildModuleIcon(Icons.campaign, "নোটিশ", Colors.deepOrange),
+                _buildModuleIcon(Icons.inventory, "স্টক", Colors.purple),
+                _buildModuleIcon(Icons.people_outline, "পরিচালক", Colors.blue),
+                _buildModuleIcon(Icons.grid_view, "আরও", Colors.grey),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+        ],
       ),
     );
   }
