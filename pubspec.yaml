@@ -12,7 +12,8 @@ dependencies:
   http: ^1.1.0
   google_fonts: ^6.1.0
   carousel_slider: ^5.0.0
-  shared_preferences: ^2.2.2
+  # এখানে কারেট (^) চিহ্ন ছাড়া নির্দিষ্ট ভার্সন দেওয়া হলো, যাতে এটি আর অটো-আপডেট না হয়ে এরর না দেয়
+  shared_preferences: 2.2.2 
 
 dev_dependencies:
   flutter_test:
@@ -21,3 +22,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  # আপাতত assets বন্ধ রাখা হলো, পরে আসল ছবি দিলে চালু করবেন
+  # assets:
+  #   - assets/
