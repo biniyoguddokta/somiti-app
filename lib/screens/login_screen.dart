@@ -34,8 +34,16 @@ class _LoginScreenState extends State<LoginScreen> {
     bool isAuthenticated = false;
 
     for (var member in members) {
+      // গুগল শিট থেকে আসা ডেটাকে টেক্সটে রূপান্তর এবং বাড়তি স্পেস বাদ দেওয়া
+      String dbPhone = member['Phone'].toString().trim();
+      String dbPin = member['PIN'].toString().trim();
+
+      // যদি ডেটার শেষে .0 থাকে (যেমন 1234.0), তবে সেটি কেটে ফেলা হবে
+      if (dbPhone.endsWith('.0')) dbPhone = dbPhone.replaceAll('.0', '');
+      if (dbPin.endsWith('.0')) dbPin = dbPin.replaceAll('.0', '');
+
       // ৩. ফোন নম্বর এবং পিন মিলিয়ে দেখা হচ্ছে
-      if (member['Phone'].toString() == phone && member['PIN'].toString() == pin) {
+      if (dbPhone == phone && dbPin == pin) {
         isAuthenticated = true;
         break;
       }
@@ -103,7 +111,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 40),
                   
-                  // নিচের সাদা কার্ড অংশ (নতুন ডিজাইন)
+                  // নিচের সাদা কার্ড অংশ
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 20),
                     padding: const EdgeInsets.all(20),
