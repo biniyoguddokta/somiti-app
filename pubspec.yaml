@@ -12,7 +12,7 @@ dependencies:
   http: ^1.1.0
   google_fonts: ^6.1.0
   carousel_slider: ^5.0.0
-  shared_preferences: ^2.2.2 # নতুন যোগ করা হলো
+  shared_preferences: ^2.2.2
 
 dev_dependencies:
   flutter_test:
