@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // নতুন ইমপোর্ট
+import 'members_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,13 +14,12 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
-  // বটম নেভিগেশনের পেজগুলো
   final List<Widget> _pages = [
-    const HomeContent(), // ০: হোম (এখানে ১,২,৩,৪,৫ সব থাকবে)
-    const Center(child: Text("সদস্য পেজ (শীঘ্রই আসছে)")), // ১: সদস্য
-    const Center(child: Text("কালেকশন পেজ (শীঘ্রই আসছে)")), // ২: কালেকশন
-    const Center(child: Text("রিপোর্ট পেজ (শীঘ্রই আসছে)")), // ৩: রিপোর্ট
-    const Center(child: Text("আরও পেজ (পরে তৈরি হবে)")), // ৪: আরও
+    const HomeContent(), 
+    const MembersScreen(), 
+    const Center(child: Text("কালেকশন পেজ (শীঘ্রই আসছে)")), 
+    const Center(child: Text("রিপোর্ট পেজ (শীঘ্রই আসছে)")), 
+    const Center(child: Text("আরও পেজ (পরে তৈরি হবে)")), 
   ];
 
   @override
@@ -49,8 +50,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// ================= ড্যাশবোর্ডের মূল অংশ (স্ক্রিনশট ১ থেকে ৫) =================
-
 class HomeContent extends StatefulWidget {
   const HomeContent({super.key});
 
@@ -61,13 +60,28 @@ class HomeContent extends StatefulWidget {
 class _HomeContentState extends State<HomeContent> {
   final CarouselSliderController _carouselController = CarouselSliderController();
   int _currentBanner = 0;
+  
+  String userName = "Admin"; // ডিফল্ট নাম, পরে আপডেট হবে
 
-  // ব্যানার ইমেজের লিস্ট (পরে আপনি assets থেকে আসল ছবি দিতে পারবেন)
   final List<String> banners = [
-    'https://via.placeholder.com/600x200/FFC107/000000?text=Special+Offer',
-    'https://via.placeholder.com/600x200/00796B/FFFFFF?text=Somiti+Keeper+Pro',
-    'https://via.placeholder.com/600x200/F44336/FFFFFF?text=New+Feature',
+    'https://via.placeholder.com/800x300/00796B/FFFFFF?text=Banner+1',
+    'https://via.placeholder.com/800x300/F44336/FFFFFF?text=Banner+2',
+    'https://via.placeholder.com/800x300/FFC107/000000?text=Banner+3',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserName(); // স্ক্রিন ওপেন হলে নাম লোড করবে
+  }
+
+  // মেমোরি থেকে নাম বের করার ফাংশন
+  void _loadUserName() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      userName = prefs.getString('userName') ?? "Admin";
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -75,8 +89,6 @@ class _HomeContentState extends State<HomeContent> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ================= স্ক্রিনশট ২ (উপরের অংশ) =================
-          // ১. টপ আইকন
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
             child: Row(
@@ -98,9 +110,8 @@ class _HomeContentState extends State<HomeContent> {
             ),
           ),
           
-          // ২. স্লাইডিং ব্যানার (ইমেজ লোড না হলে অ্যাপ ক্র্যাশ করবে না)
           SizedBox(
-            height: 150,
+            height: 160,
             child: CarouselSlider(
               carouselController: _carouselController,
               options: CarouselOptions(
@@ -120,13 +131,13 @@ class _HomeContentState extends State<HomeContent> {
                       margin: const EdgeInsets.symmetric(horizontal: 5.0),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(15),
-                        color: Colors.grey[300],
+                        color: Colors.grey[200],
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(15),
                         child: Image.network(
                           bannerUrl,
-                          fit: BoxFit.cover,
+                          fit: BoxFit.fill,
                           errorBuilder: (context, error, stackTrace) {
                             return const Center(child: Icon(Icons.image_not_supported, color: Colors.grey));
                           },
@@ -140,7 +151,6 @@ class _HomeContentState extends State<HomeContent> {
           ),
           const SizedBox(height: 10),
           
-          // ডট ইন্ডিকেটর
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: banners.asMap().entries.map((entry) {
@@ -159,7 +169,6 @@ class _HomeContentState extends State<HomeContent> {
             }).toList(),
           ),
           
-          // ৩. লাল বকেয়া বক্স
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
             padding: const EdgeInsets.all(15),
@@ -186,13 +195,13 @@ class _HomeContentState extends State<HomeContent> {
             ),
           ),
 
-          // ৪. শুভেচ্ছা
+          // 🔥 এখানে ডাইনামিক নামটি বসানো হলো
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 15),
             child: Row(
-              children: const [
-                Text("শুভ সকাল, ", style: TextStyle(fontSize: 16, color: Colors.grey)),
-                Text("Admin ", style: TextStyle(fontSize: 16, color: Colors.blue, fontWeight: FontWeight.bold)),
+              children: [
+                const Text("শুভ সকাল, ", style: TextStyle(fontSize: 16, color: Colors.grey)),
+                Text("$userName ", style: const TextStyle(fontSize: 16, color: Colors.blue, fontWeight: FontWeight.bold)), // userName ভ্যারিয়েবল
               ],
             ),
           ),
@@ -202,7 +211,6 @@ class _HomeContentState extends State<HomeContent> {
           ),
           const SizedBox(height: 20),
           
-          // ৫. ৪টি কার্ড (সমান সাইজ)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 15),
             child: Row(
@@ -219,7 +227,6 @@ class _HomeContentState extends State<HomeContent> {
           ),
           const SizedBox(height: 20),
           
-          // ৬. ৪টি অ্যাকশন বাটন
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 15),
             child: Row(
@@ -234,7 +241,6 @@ class _HomeContentState extends State<HomeContent> {
           ),
           const SizedBox(height: 30),
           
-          // ================= স্ক্রিনশট ৩ (মডিউল ও ফিচার) =================
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 15),
             child: Text("মডিউল ও ফিচার", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey)),
@@ -371,7 +377,6 @@ class _HomeContentState extends State<HomeContent> {
           ),
           const SizedBox(height: 15),
           
-          // হোম কাস্টমাইজ
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 15),
             child: Container(
@@ -390,7 +395,6 @@ class _HomeContentState extends State<HomeContent> {
           ),
           const SizedBox(height: 15),
           
-          // নতুন কিছু দরকার
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 15),
             child: Container(
@@ -416,7 +420,6 @@ class _HomeContentState extends State<HomeContent> {
           ),
           const SizedBox(height: 25),
 
-          // দ্বিতীয় ব্যানার স্লাইডার
           SizedBox(
             height: 120,
             child: CarouselSlider(
@@ -434,13 +437,13 @@ class _HomeContentState extends State<HomeContent> {
                       margin: const EdgeInsets.symmetric(horizontal: 5.0),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(15),
-                        color: Colors.grey[300],
+                        color: Colors.grey[200],
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(15),
                         child: Image.network(
                           bannerUrl,
-                          fit: BoxFit.cover,
+                          fit: BoxFit.fill,
                           errorBuilder: (context, error, stackTrace) {
                             return const Center(child: Icon(Icons.image_not_supported, color: Colors.grey));
                           },
@@ -454,7 +457,6 @@ class _HomeContentState extends State<HomeContent> {
           ),
           const SizedBox(height: 15),
 
-          // ভাষা পরিবর্তন
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 15),
             child: Container(
@@ -485,8 +487,6 @@ class _HomeContentState extends State<HomeContent> {
       ),
     );
   }
-
-  // ================= কাস্টম উইজেটস =================
 
   Widget _buildInfoCard(String title, String amount, IconData icon, Color color) {
     return Container(
