@@ -5,21 +5,51 @@ class ApiService {
   // ⚠️ এখানে আপনার Apps Script URL দিন (শেষে /exec আছে কি না দেখুন)
   static const String baseUrl = 'https://script.google.com/macros/s/AKfycbym4x7w8O8My3nxHibkCIxXlvFpTEmJnOd7LQMsAt07gFdJ0h_ixzMI2GIDLAvax5pwAg/exec';
 
+  // ডেটা পড়ার ফাংশন (GET)
   static Future<dynamic> getAllMembers() async {
     try {
       final response = await http.get(Uri.parse('$baseUrl?action=getAllMembers'));
-      
       if (response.statusCode == 200) {
-        // চেক করা হচ্ছে ডেটা JSON কি না (গুগল লগইন পেজ আসলে এই এরর দেখাবে)
         if (response.body.contains("<!DOCTYPE html>")) {
-          return {"error": "API লিংকটি ভুল বা গুগল লগইন চাচ্ছে। Deploy আবার চেক করুন।"};
+          return {"error": "API লিংকটি ভুল। Deploy আবার চেক করুন।"};
         }
         return jsonDecode(response.body);
       } else {
         return {"error": "সার্ভার এরর: ${response.statusCode}"};
       }
     } catch (e) {
-      return {"error": "ইন্টারনেট সমস্যা বা কোডে ভুল আছে: $e"};
+      return {"error": "ইন্টারনেট সমস্যা: $e"};
+    }
+  }
+
+  // নতুন ডেটা পাঠানোর ফাংশন (POST)
+  static Future<Map<String, dynamic>> addMember({
+    required String name,
+    required String phone,
+    required String email,
+    required String pin,
+    required String role,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl?action=addMember'),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "name": name,
+          "phone": phone,
+          "email": email,
+          "pin": pin,
+          "role": role,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        return {"status": "error", "message": "সার্ভার এরর: ${response.statusCode}"};
+      }
+    } catch (e) {
+      return {"status": "error", "message": "ইন্টারনেট সমস্যা: $e"};
     }
   }
 }
