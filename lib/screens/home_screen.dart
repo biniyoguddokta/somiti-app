@@ -11,8 +11,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
-  
-  // এখানে CarouselSliderController ব্যবহার করা হলো
+  // নতুন ভার্সন অনুযায়ী CarouselSliderController ব্যবহার করা হলো
   final CarouselSliderController _carouselController = CarouselSliderController();
   int _currentBanner = 0;
 
