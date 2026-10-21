@@ -47,6 +47,7 @@ class _LoginScreenState extends State<LoginScreen> {
       List members = response;
       bool isAuthenticated = false;
       String userRole = "Member";
+      String userName = "User"; // ডিফল্ট নাম
 
       for (var member in members) {
         String dbPhone = member['Phone'].toString().trim();
@@ -58,20 +59,20 @@ class _LoginScreenState extends State<LoginScreen> {
         if (dbPhone == phone && dbPin == pin) {
           isAuthenticated = true;
           userRole = member['Role'].toString();
+          userName = member['Name'].toString(); // ইউজারের নাম নেওয়া হচ্ছে
           break;
         }
       }
 
       if (isAuthenticated) {
-        // মেমোরিতে সেভ করা হচ্ছে
         SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setBool('isLoggedIn', true);
         await prefs.setString('userPhone', phone);
         await prefs.setString('userRole', userRole);
+        await prefs.setString('userName', userName); // নামটি সেভ করা হচ্ছে
 
         if (!mounted) return;
         
-        // হোম স্ক্রিনে যাওয়া
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const HomeScreen()),
@@ -83,7 +84,6 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } catch (e) {
-      // যদি কোনো এরর হয়, তবে আটকে না গিয়ে এরর মেসেজ দেখাবে
       setState(() { _isLoading = false; });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("সমস্যা হয়েছে: $e"), backgroundColor: Colors.red),
