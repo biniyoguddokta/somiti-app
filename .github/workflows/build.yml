@@ -30,13 +30,16 @@ jobs:
     - name: Add Internet Permission
       run: sed -i 's/<application/<uses-permission android:name="android.permission.INTERNET"\/>\n    <application/' android/app/src/main/AndroidManifest.xml
 
-    # 🔥 ১. ProGuard রুলস ফাইল তৈরি করা হচ্ছে
+    # 🔥 ১. অ্যাপের নাম পরিবর্তন করার নতুন স্টেপ
+    - name: Change App Name
+      run: |
+        sed -i 's/android:label="somiti_app"/android:label="বিনিয়োগ উদ্যোক্তা"/g' android/app/src/main/AndroidManifest.xml
+
+    # ২. ProGuard রুলস ফাইল তৈরি করা হচ্ছে
     - name: Create ProGuard Rules
       run: |
         mkdir -p android/app
         cat << 'EOF' > android/app/proguard-rules.pro
-        # JNI-backed plugins (shared_preferences_android 2.5+) look up these Kotlin types by name from Dart.
-        # R8 renames them otherwise, so calls like SharedPreferences.getInstance() fail in release.
         -keep class kotlin.Unit { *; }
         -keep class kotlin.Result { *; }
         -keep class kotlin.Result$Failure { *; }
@@ -45,7 +48,7 @@ jobs:
         -keep class kotlin.coroutines.intrinsics.IntrinsicsKt { *; }
         EOF
 
-    # 🔥 ২. build.gradle ফাইলে proguard-rules.pro যুক্ত করা হচ্ছে
+    # ৩. build.gradle ফাইলে proguard-rules.pro যুক্ত করা হচ্ছে
     - name: Configure ProGuard in build.gradle
       run: |
         if [ -f android/app/build.gradle.kts ]; then
