@@ -30,6 +30,14 @@ jobs:
     - name: Add Internet Permission
       run: sed -i 's/<application/<uses-permission android:name="android.permission.INTERNET"\/>\n    <application/' android/app/src/main/AndroidManifest.xml
 
+    # 🔥 এই অংশটুকু নতুন যোগ করা হয়েছে (R8 অপটিমাইজেশন বন্ধ করার জন্য)
+    - name: Disable R8 Minification
+      run: |
+        sed -i 's/minifyEnabled true/minifyEnabled false/g' android/app/build.gradle
+        sed -i 's/shrinkResources true/shrinkResources false/g' android/app/build.gradle
+        sed -i 's/minifyEnabled true/minifyEnabled false/g' android/app/build.gradle.kts
+        sed -i 's/shrinkResources true/shrinkResources false/g' android/app/build.gradle.kts
+
     - name: Build APK
       run: flutter build apk --release
 
