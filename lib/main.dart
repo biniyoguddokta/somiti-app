@@ -15,13 +15,13 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Somiti App',
+      title: 'বিনিয়োগ উদ্যোক্তা', // 🔥 এখানে নতুন নাম দেওয়া হলো
       theme: ThemeData(
         primaryColor: const Color(0xFF00796B),
         scaffoldBackgroundColor: const Color(0xFFF5F7FA),
         textTheme: GoogleFonts.hindSiliguriTextTheme(Theme.of(context).textTheme),
       ),
-      home: const SplashScreen(), // প্রথমে স্প্ল্যাশ স্ক্রিন দেখাবে
+      home: const SplashScreen(),
     );
   }
 }
@@ -43,11 +43,9 @@ class _SplashScreenState extends State<SplashScreen> {
 
   void checkLoginStatus() async {
     try {
-      // মেমোরি থেকে ডেটা পড়ার চেষ্টা করবে
       SharedPreferences prefs = await SharedPreferences.getInstance();
       bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
 
-      // ২ সেকেন্ড অপেক্ষা করবে (যাতে স্প্ল্যাশ স্ক্রিন সুন্দর দেখায়)
       await Future.delayed(const Duration(seconds: 2));
 
       if (!mounted) return;
@@ -58,7 +56,6 @@ class _SplashScreenState extends State<SplashScreen> {
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginScreen()));
       }
     } catch (e) {
-      // যদি কোনো কারণবশত এরর হয়, তবে আটকে না থেকে সরাসরি লগইন পেজে যাবে
       print("Error reading login status: $e");
       await Future.delayed(const Duration(seconds: 2));
       if (!mounted) return;
