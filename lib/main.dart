@@ -42,17 +42,26 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   void checkLoginStatus() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+    try {
+      // মেমোরি থেকে ডেটা পড়ার চেষ্টা করবে
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
 
-    // ২ সেকেন্ড অপেক্ষা করে পরের পেজে যাবে
-    await Future.delayed(const Duration(seconds: 2));
+      // ২ সেকেন্ড অপেক্ষা করবে (যাতে স্প্ল্যাশ স্ক্রিন সুন্দর দেখায়)
+      await Future.delayed(const Duration(seconds: 2));
 
-    if (!mounted) return;
-    
-    if (isLoggedIn) {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomeScreen()));
-    } else {
+      if (!mounted) return;
+      
+      if (isLoggedIn) {
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomeScreen()));
+      } else {
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginScreen()));
+      }
+    } catch (e) {
+      // যদি কোনো কারণবশত এরর হয়, তবে আটকে না থেকে সরাসরি লগইন পেজে যাবে
+      print("Error reading login status: $e");
+      await Future.delayed(const Duration(seconds: 2));
+      if (!mounted) return;
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginScreen()));
     }
   }
