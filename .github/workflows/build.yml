@@ -30,20 +30,30 @@ jobs:
     - name: Add Internet Permission
       run: sed -i 's/<application/<uses-permission android:name="android.permission.INTERNET"\/>\n    <application/' android/app/src/main/AndroidManifest.xml
 
-    # 🔥 R8 অপটিমাইজেশন বন্ধ করার আপডেটেড ধাপ
-    - name: Disable R8 Minification
+    # 🔥 ১. ProGuard রুলস ফাইল তৈরি করা হচ্ছে
+    - name: Create ProGuard Rules
+      run: |
+        mkdir -p android/app
+        cat << 'EOF' > android/app/proguard-rules.pro
+        # JNI-backed plugins (shared_preferences_android 2.5+) look up these Kotlin types by name from Dart.
+        # R8 renames them otherwise, so calls like SharedPreferences.getInstance() fail in release.
+        -keep class kotlin.Unit { *; }
+        -keep class kotlin.Result { *; }
+        -keep class kotlin.Result$Failure { *; }
+        -keep class kotlin.coroutines.Continuation { *; }
+        -keep class kotlin.coroutines.intrinsics.CoroutineSingletons { *; }
+        -keep class kotlin.coroutines.intrinsics.IntrinsicsKt { *; }
+        EOF
+
+    # 🔥 ২. build.gradle ফাইলে proguard-rules.pro যুক্ত করা হচ্ছে
+    - name: Configure ProGuard in build.gradle
       run: |
         if [ -f android/app/build.gradle.kts ]; then
-          echo "build.gradle.kts found. Disabling R8..."
-          sed -i 's/isMinifyEnabled true/isMinifyEnabled false/g' android/app/build.gradle.kts
-          sed -i 's/isShrinkResources true/isShrinkResources false/g' android/app/build.gradle.kts
+          echo "Configuring build.gradle.kts..."
+          sed -i 's/release {/release {\n            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")/' android/app/build.gradle.kts
         elif [ -f android/app/build.gradle ]; then
-          echo "build.gradle found. Disabling R8..."
-          sed -i 's/minifyEnabled true/minifyEnabled false/g' android/app/build.gradle
-          sed -i 's/shrinkResources true/shrinkResources false/g' android/app/build.gradle
-        else
-          echo "No build.gradle or build.gradle.kts found. Creating gradle.properties fallback..."
-          echo "android.enableR8=false" >> android/gradle.properties
+          echo "Configuring build.gradle..."
+          sed -i 's/release {/release {\n            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"/' android/app/build.gradle
         fi
 
     - name: Build APK
