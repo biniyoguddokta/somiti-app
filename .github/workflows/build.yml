@@ -21,12 +21,14 @@ jobs:
       with:
         channel: 'stable'
 
-    # এই ধাপটি আপনার অনুপস্থিত android ফোল্ডারগুলো তৈরি করে নেবে
     - name: Recreate Flutter Platform Folders
       run: flutter create .
 
     - name: Install dependencies
       run: flutter pub get
+
+    - name: Add Internet Permission
+      run: sed -i 's/<application/<uses-permission android:name="android.permission.INTERNET"\/>\n    <application/' android/app/src/main/AndroidManifest.xml
 
     - name: Build APK
       run: flutter build apk --release
