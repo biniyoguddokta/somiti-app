@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart'; // API সার্ভিস ইমপোর্ট
 import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -9,14 +10,58 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _pinController = TextEditingController();
+  bool _isLoading = false;
+
+  // লগইন ফাংশন
+  void _login() async {
+    String phone = _phoneController.text.trim();
+    String pin = _pinController.text.trim();
+
+    // ১. চেক করা হচ্ছে ইনপুট খালি কি না
+    if (phone.isEmpty || pin.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("ফোন নম্বর এবং পিন দিন"), backgroundColor: Colors.orange),
+      );
+      return;
+    }
+
+    setState(() { _isLoading = true; });
+
+    // ২. গুগল শিট থেকে ডেটা চেক করা
+    var members = await ApiService.getAllMembers();
+    bool isAuthenticated = false;
+
+    for (var member in members) {
+      // ৩. ফোন নম্বর এবং পিন মিলিয়ে দেখা হচ্ছে
+      if (member['Phone'].toString() == phone && member['PIN'].toString() == pin) {
+        isAuthenticated = true;
+        break;
+      }
+    }
+
+    setState(() { _isLoading = false; });
+
+    // ৪. লগইন সফল বা ব্যর্থ হলে যা হবে
+    if (isAuthenticated) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("ভুল ফোন নম্বর বা পিন!"), backgroundColor: Colors.red),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
-          // উপরের সবুজ/নীল অংশ
+          // উপরের সবুজ অংশ
           Container(
             height: MediaQuery.of(context).size.height * 0.45,
             decoration: const BoxDecoration(
@@ -32,7 +77,7 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 children: [
                   const SizedBox(height: 20),
-                  // ব্যানার ইমেজ (পরে আপনি assets/logo.png দিবেন)
+                  // ব্যানার ইমেজ
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 40),
                     padding: const EdgeInsets.all(10),
@@ -58,7 +103,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 40),
                   
-                  // নিচের সাদা কার্ড অংশ
+                  // নিচের সাদা কার্ড অংশ (নতুন ডিজাইন)
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 20),
                     padding: const EdgeInsets.all(20),
@@ -69,33 +114,25 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // ইউজার ইনফো
-                        Container(
-                          padding: const EdgeInsets.all(15),
-                          decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(15),
-                            border: Border.all(color: Colors.green.withOpacity(0.3)),
-                          ),
-                          child: Row(
-                            children: [
-                              const CircleAvatar(
-                                radius: 25,
-                                backgroundColor: Color(0xFF00796B),
-                                child: Text("মো", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                              ),
-                              const SizedBox(width: 15),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: const [
-                                  Text("আবার স্বাগতম, মো : মিরাজ", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                                  Text("০১৮০০•••••০০", style: TextStyle(color: Colors.grey)),
-                                ],
-                              ),
-                            ],
+                        // ফোন নম্বর ইনপুট
+                        const Text("ফোন নম্বর", style: TextStyle(fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 10),
+                        TextField(
+                          controller: _phoneController,
+                          keyboardType: TextInputType.phone,
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: Colors.grey[100],
+                            prefixIcon: const Icon(Icons.phone),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(15),
+                              borderSide: BorderSide.none,
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 25),
+                        const SizedBox(height: 20),
+                        
+                        // পিন ইনপুট
                         const Text("পিন", style: TextStyle(fontWeight: FontWeight.bold)),
                         const SizedBox(height: 10),
                         TextField(
@@ -106,21 +143,15 @@ class _LoginScreenState extends State<LoginScreen> {
                             filled: true,
                             fillColor: Colors.grey[100],
                             prefixIcon: const Icon(Icons.password),
-                            suffixIcon: const Icon(Icons.visibility_off),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(15),
                               borderSide: BorderSide.none,
                             ),
                           ),
                         ),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            onPressed: () {},
-                            child: const Text("পিন ভুলে গেছেন?", style: TextStyle(color: Color(0xFF00796B))),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 30),
+                        
+                        // লগইন বাটন
                         SizedBox(
                           width: double.infinity,
                           height: 55,
@@ -129,19 +160,16 @@ class _LoginScreenState extends State<LoginScreen> {
                               backgroundColor: const Color(0xFF00796B),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                             ),
-                            onPressed: () {
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(builder: (context) => const HomeScreen()),
-                              );
-                            },
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: const [
-                                Text("পিন দিয়ে ঢুকুন  ", style: TextStyle(fontSize: 18, color: Colors.white)),
-                                Icon(Icons.arrow_forward, color: Colors.white),
-                              ],
-                            ),
+                            onPressed: _isLoading ? null : _login,
+                            child: _isLoading 
+                              ? const CircularProgressIndicator(color: Colors.white)
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: const [
+                                    Text("পিন দিয়ে ঢুকুন  ", style: TextStyle(fontSize: 18, color: Colors.white)),
+                                    Icon(Icons.arrow_forward, color: Colors.white),
+                                  ],
+                                ),
                           ),
                         )
                       ],
