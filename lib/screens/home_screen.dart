@@ -18,7 +18,7 @@ class _HomeScreenState extends State<HomeScreen> {
     const Center(child: Text("সদস্য পেজ (শীঘ্রই আসছে)")), // ১: সদস্য
     const Center(child: Text("কালেকশন পেজ (শীঘ্রই আসছে)")), // ২: কালেকশন
     const Center(child: Text("রিপোর্ট পেজ (শীঘ্রই আসছে)")), // ৩: রিপোর্ট
-    const Center(child: Text("আরও পেজ (পরে তৈরি হবে)")), // ৪: আরও (পরে আপনার নির্দেশনা অনুযায়ী হবে)
+    const Center(child: Text("আরও পেজ (পরে তৈরি হবে)")), // ৪: আরও
   ];
 
   @override
@@ -62,10 +62,11 @@ class _HomeContentState extends State<HomeContent> {
   final CarouselSliderController _carouselController = CarouselSliderController();
   int _currentBanner = 0;
 
+  // ব্যানার ইমেজের লিস্ট (পরে আপনি assets থেকে আসল ছবি দিতে পারবেন)
   final List<String> banners = [
-    'https://via.placeholder.com/600x200/FFC107/000000?text=Banner+1',
-    'https://via.placeholder.com/600x200/00796B/FFFFFF?text=Banner+2',
-    'https://via.placeholder.com/600x200/F44336/FFFFFF?text=Banner+3',
+    'https://via.placeholder.com/600x200/FFC107/000000?text=Special+Offer',
+    'https://via.placeholder.com/600x200/00796B/FFFFFF?text=Somiti+Keeper+Pro',
+    'https://via.placeholder.com/600x200/F44336/FFFFFF?text=New+Feature',
   ];
 
   @override
@@ -74,6 +75,7 @@ class _HomeContentState extends State<HomeContent> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ================= স্ক্রিনশট ২ (উপরের অংশ) =================
           // ১. টপ আইকন
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
@@ -96,33 +98,45 @@ class _HomeContentState extends State<HomeContent> {
             ),
           ),
           
-          // ২. স্লাইডিং ব্যানার
-          CarouselSlider(
-            carouselController: _carouselController,
-            options: CarouselOptions(
-              height: 150,
-              autoPlay: true,
-              autoPlayInterval: const Duration(seconds: 3),
-              enlargeCenterPage: true,
-              viewportFraction: 0.9,
-              onPageChanged: (index, reason) {
-                setState(() { _currentBanner = index; });
-              },
-            ),
-            items: banners.map((bannerUrl) {
-              return Builder(
-                builder: (BuildContext context) {
-                  return Container(
-                    width: MediaQuery.of(context).size.width,
-                    margin: const EdgeInsets.symmetric(horizontal: 5.0),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(15),
-                      image: DecorationImage(image: NetworkImage(bannerUrl), fit: BoxFit.cover),
-                    ),
-                  );
+          // ২. স্লাইডিং ব্যানার (ইমেজ লোড না হলে অ্যাপ ক্র্যাশ করবে না)
+          SizedBox(
+            height: 150,
+            child: CarouselSlider(
+              carouselController: _carouselController,
+              options: CarouselOptions(
+                autoPlay: true,
+                autoPlayInterval: const Duration(seconds: 3),
+                enlargeCenterPage: true,
+                viewportFraction: 0.9,
+                onPageChanged: (index, reason) {
+                  setState(() { _currentBanner = index; });
                 },
-              );
-            }).toList(),
+              ),
+              items: banners.map((bannerUrl) {
+                return Builder(
+                  builder: (BuildContext context) {
+                    return Container(
+                      width: MediaQuery.of(context).size.width,
+                      margin: const EdgeInsets.symmetric(horizontal: 5.0),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(15),
+                        color: Colors.grey[300],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(15),
+                        child: Image.network(
+                          bannerUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Center(child: Icon(Icons.image_not_supported, color: Colors.grey));
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                );
+              }).toList(),
+            ),
           ),
           const SizedBox(height: 10),
           
@@ -188,7 +202,7 @@ class _HomeContentState extends State<HomeContent> {
           ),
           const SizedBox(height: 20),
           
-          // ৫. ৪টি কার্ড (সমান সাইজ নিশ্চিত করা হয়েছে)
+          // ৫. ৪টি কার্ড (সমান সাইজ)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 15),
             child: Row(
@@ -220,7 +234,7 @@ class _HomeContentState extends State<HomeContent> {
           ),
           const SizedBox(height: 30),
           
-          // ৭. মডিউল ও ফিচার (শেষের 'আরও' বাদ দেওয়া হলো)
+          // ================= স্ক্রিনশট ৩ (মডিউল ও ফিচার) =================
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 15),
             child: Text("মডিউল ও ফিচার", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey)),
@@ -256,8 +270,7 @@ class _HomeContentState extends State<HomeContent> {
           ),
           const SizedBox(height: 30),
 
-          // ================= ৪ নং স্ক্রিনশট এর ডিজাইন (মডিউলের নিচে) =================
-          
+          // ================= স্ক্রিনশট ৪ (SMS ও চার্ট) =================
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 15),
             child: Text("SMS", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey)),
@@ -329,8 +342,7 @@ class _HomeContentState extends State<HomeContent> {
           ),
           const SizedBox(height: 30),
 
-          // ================= ৫ নং স্ক্রিনশট এর ডিজাইন =================
-
+          // ================= স্ক্রিনশট ৫ (সেটিংস ও ভাষা) =================
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 15),
             child: Text("সেটিংস, শেখা ও সাহায্য", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey)),
@@ -404,29 +416,41 @@ class _HomeContentState extends State<HomeContent> {
           ),
           const SizedBox(height: 25),
 
-          // ব্যানার স্লাইডার
-          CarouselSlider(
-            options: CarouselOptions(
-              height: 120,
-              autoPlay: true,
-              autoPlayInterval: const Duration(seconds: 3),
-              enlargeCenterPage: true,
-              viewportFraction: 0.9,
+          // দ্বিতীয় ব্যানার স্লাইডার
+          SizedBox(
+            height: 120,
+            child: CarouselSlider(
+              options: CarouselOptions(
+                autoPlay: true,
+                autoPlayInterval: const Duration(seconds: 3),
+                enlargeCenterPage: true,
+                viewportFraction: 0.9,
+              ),
+              items: banners.map((bannerUrl) {
+                return Builder(
+                  builder: (BuildContext context) {
+                    return Container(
+                      width: MediaQuery.of(context).size.width,
+                      margin: const EdgeInsets.symmetric(horizontal: 5.0),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(15),
+                        color: Colors.grey[300],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(15),
+                        child: Image.network(
+                          bannerUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Center(child: Icon(Icons.image_not_supported, color: Colors.grey));
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                );
+              }).toList(),
             ),
-            items: banners.map((bannerUrl) {
-              return Builder(
-                builder: (BuildContext context) {
-                  return Container(
-                    width: MediaQuery.of(context).size.width,
-                    margin: const EdgeInsets.symmetric(horizontal: 5.0),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(15),
-                      image: DecorationImage(image: NetworkImage(bannerUrl), fit: BoxFit.cover),
-                    ),
-                  );
-                },
-              );
-            }).toList(),
           ),
           const SizedBox(height: 15),
 
@@ -462,9 +486,8 @@ class _HomeContentState extends State<HomeContent> {
     );
   }
 
-  // ================= কাস্টম উইজেট =================
+  // ================= কাস্টম উইজেটস =================
 
-  // কার্ডের সাইজ সমান করার জন্য height: 100 ফিক্স করা হয়েছে
   Widget _buildInfoCard(String title, String amount, IconData icon, Color color) {
     return Container(
       height: 100, 
