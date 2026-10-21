@@ -27,6 +27,11 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
+    // ইউজারের দেওয়া নম্বরের শুরুতে যদি '০' থাকে, তবে সেটি বাদ দেওয়া হচ্ছে
+    if (phone.startsWith('0')) {
+      phone = phone.substring(1);
+    }
+
     setState(() { _isLoading = true; });
 
     // ২. গুগল শিট থেকে ডেটা চেক করা
@@ -41,6 +46,11 @@ class _LoginScreenState extends State<LoginScreen> {
       // যদি ডেটার শেষে .0 থাকে (যেমন 1234.0), তবে সেটি কেটে ফেলা হবে
       if (dbPhone.endsWith('.0')) dbPhone = dbPhone.replaceAll('.0', '');
       if (dbPin.endsWith('.0')) dbPin = dbPin.replaceAll('.0', '');
+
+      // গুগল শিটের নম্বরের শুরুতে যদি '০' থাকে, তবে সেটিও বাদ দেওয়া হচ্ছে
+      if (dbPhone.startsWith('0')) {
+        dbPhone = dbPhone.substring(1);
+      }
 
       // ৩. ফোন নম্বর এবং পিন মিলিয়ে দেখা হচ্ছে
       if (dbPhone == phone && dbPin == pin) {
