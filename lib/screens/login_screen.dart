@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../services/api_service.dart'; // API সার্ভিস ইমপোর্ট
+import 'package:shared_preferences/shared_preferences.dart';
+import '../services/api_service.dart';
 import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -13,14 +14,12 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _pinController = TextEditingController();
   bool _isLoading = false;
-  bool _isPasswordVisible = false; // পাসওয়ার্ড শো/হাইড এর জন্য
+  bool _isPasswordVisible = false;
 
-  // লগইন ফাংশন
   void _login() async {
     String phone = _phoneController.text.trim();
     String pin = _pinController.text.trim();
 
-    // ১. চেক করা হচ্ছে ইনপুট খালি কি না
     if (phone.isEmpty || pin.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("ফোন নম্বর এবং পিন দিন"), backgroundColor: Colors.orange),
@@ -28,17 +27,14 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    // ইউজারের দেওয়া নম্বরের শুরুতে যদি '০' থাকে, তবে সেটি বাদ দেওয়া হচ্ছে
     if (phone.startsWith('0')) {
       phone = phone.substring(1);
     }
 
     setState(() { _isLoading = true; });
 
-    // ২. গুগল শিট থেকে ডেটা চেক করা
     var response = await ApiService.getAllMembers();
 
-    // যদি API থেকে কোনো এরর আসে, তবে সেটি শো করবে
     if (response is Map && response.containsKey('error')) {
       setState(() { _isLoading = false; });
       ScaffoldMessenger.of(context).showSnackBar(
@@ -49,32 +45,32 @@ class _LoginScreenState extends State<LoginScreen> {
 
     List members = response;
     bool isAuthenticated = false;
+    String userRole = "Member"; // ডিফল্ট রোল
 
     for (var member in members) {
-      // গুগল শিট থেকে আসা ডেটাকে টেক্সটে রূপান্তর এবং বাড়তি স্পেস বাদ দেওয়া
       String dbPhone = member['Phone'].toString().trim();
       String dbPin = member['PIN'].toString().trim();
-
-      // যদি ডেটার শেষে .0 থাকে (যেমন 1234.0), তবে সেটি কেটে ফেলা হবে
       if (dbPhone.endsWith('.0')) dbPhone = dbPhone.replaceAll('.0', '');
       if (dbPin.endsWith('.0')) dbPin = dbPin.replaceAll('.0', '');
+      if (dbPhone.startsWith('0')) dbPhone = dbPhone.substring(1);
 
-      // গুগল শিটের নম্বরের শুরুতে যদি '০' থাকে, তবে সেটিও বাদ দেওয়া হচ্ছে
-      if (dbPhone.startsWith('0')) {
-        dbPhone = dbPhone.substring(1);
-      }
-
-      // ৩. ফোন নম্বর এবং পিন মিলিয়ে দেখা হচ্ছে
       if (dbPhone == phone && dbPin == pin) {
         isAuthenticated = true;
+        userRole = member['Role'].toString(); // রোল সেভ করা হচ্ছে
         break;
       }
     }
 
     setState(() { _isLoading = false; });
 
-    // ৪. লগইন সফল বা ব্যর্থ হলে যা হবে
     if (isAuthenticated) {
+      // 🔥 লগইন সেভ করা হচ্ছে ফোনের মেমোরিতে
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isLoggedIn', true);
+      await prefs.setString('userPhone', phone);
+      await prefs.setString('userRole', userRole); // রোল সেভ করা হলো
+
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const HomeScreen()),
@@ -86,12 +82,12 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  // ... নিচের build মেথড আগের মতোই থাকবে, কোনো পরিবর্তন নেই ...
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
-          // উপরের সবুজ অংশ
           Container(
             height: MediaQuery.of(context).size.height * 0.45,
             decoration: const BoxDecoration(
@@ -107,7 +103,6 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 children: [
                   const SizedBox(height: 20),
-                  // ব্যানার ইমেজ
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 40),
                     padding: const EdgeInsets.all(10),
@@ -132,8 +127,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: TextStyle(fontSize: 16, color: Colors.white70),
                   ),
                   const SizedBox(height: 40),
-                  
-                  // নিচের সাদা কার্ড অংশ
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 20),
                     padding: const EdgeInsets.all(20),
@@ -144,7 +137,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // ফোন নম্বর ইনপুট
                         const Text("ফোন নম্বর", style: TextStyle(fontWeight: FontWeight.bold)),
                         const SizedBox(height: 10),
                         TextField(
@@ -161,13 +153,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         const SizedBox(height: 20),
-                        
-                        // পিন ইনপুট (Show/Hide আইকনসহ)
                         const Text("পিন", style: TextStyle(fontWeight: FontWeight.bold)),
                         const SizedBox(height: 10),
                         TextField(
                           controller: _pinController,
-                          obscureText: !_isPasswordVisible, // পাসওয়ার্ড দৃশ্যমান বা অদৃশ্যমান করার লজিক
+                          obscureText: !_isPasswordVisible,
                           keyboardType: TextInputType.number,
                           decoration: InputDecoration(
                             filled: true,
@@ -175,11 +165,11 @@ class _LoginScreenState extends State<LoginScreen> {
                             prefixIcon: const Icon(Icons.password),
                             suffixIcon: IconButton(
                               icon: Icon(
-                                _isPasswordVisible ? Icons.visibility : Icons.visibility_off, // চোখের আইকন
+                                _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
                               ),
                               onPressed: () {
                                 setState(() {
-                                  _isPasswordVisible = !_isPasswordVisible; // ক্লিক করলে টগল হবে
+                                  _isPasswordVisible = !_isPasswordVisible;
                                 });
                               },
                             ),
@@ -190,8 +180,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         const SizedBox(height: 30),
-                        
-                        // লগইন বাটন
                         SizedBox(
                           width: double.infinity,
                           height: 55,
