@@ -1,8 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // নতুন ইমপোর্ট
+import 'package:shared_preferences/shared_preferences.dart';
 import 'members_screen.dart';
+import 'add_member_screen.dart'; // নতুন পেজটি ইমপোর্ট করা হলো
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,12 +15,13 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
+  // বটম নেভিগেশনের পেজগুলো
   final List<Widget> _pages = [
-    const HomeContent(), 
-    const MembersScreen(), 
-    const Center(child: Text("কালেকশন পেজ (শীঘ্রই আসছে)")), 
-    const Center(child: Text("রিপোর্ট পেজ (শীঘ্রই আসছে)")), 
-    const Center(child: Text("আরও পেজ (পরে তৈরি হবে)")), 
+    const HomeContent(), // ০: হোম
+    const MembersScreen(), // ১: সদস্য পেজ
+    const Center(child: Text("কালেকশন পেজ (শীঘ্রই আসছে)")), // ২: কালেকশন
+    const Center(child: Text("রিপোর্ট পেজ (শীঘ্রই আসছে)")), // ৩: রিপোর্ট
+    const Center(child: Text("আরও পেজ (পরে তৈরি হবে)")), // ৪: আরও
   ];
 
   @override
@@ -49,6 +51,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
+// ================= ড্যাশবোর্ডের মূল অংশ =================
 
 class HomeContent extends StatefulWidget {
   const HomeContent({super.key});
@@ -89,6 +93,7 @@ class _HomeContentState extends State<HomeContent> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ১. টপ আইকন
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
             child: Row(
@@ -110,6 +115,7 @@ class _HomeContentState extends State<HomeContent> {
             ),
           ),
           
+          // ২. স্লাইডিং ব্যানার
           SizedBox(
             height: 160,
             child: CarouselSlider(
@@ -151,6 +157,7 @@ class _HomeContentState extends State<HomeContent> {
           ),
           const SizedBox(height: 10),
           
+          // ডট ইন্ডিকেটর
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: banners.asMap().entries.map((entry) {
@@ -169,6 +176,7 @@ class _HomeContentState extends State<HomeContent> {
             }).toList(),
           ),
           
+          // ৩. লাল বকেয়া বক্স
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
             padding: const EdgeInsets.all(15),
@@ -195,13 +203,13 @@ class _HomeContentState extends State<HomeContent> {
             ),
           ),
 
-          // 🔥 এখানে ডাইনামিক নামটি বসানো হলো
+          // ৪. ডাইনামিক শুভেচ্ছা
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 15),
             child: Row(
               children: [
                 const Text("শুভ সকাল, ", style: TextStyle(fontSize: 16, color: Colors.grey)),
-                Text("$userName ", style: const TextStyle(fontSize: 16, color: Colors.blue, fontWeight: FontWeight.bold)), // userName ভ্যারিয়েবল
+                Text("$userName ", style: const TextStyle(fontSize: 16, color: Colors.blue, fontWeight: FontWeight.bold)),
               ],
             ),
           ),
@@ -211,6 +219,7 @@ class _HomeContentState extends State<HomeContent> {
           ),
           const SizedBox(height: 20),
           
+          // ৫. ৪টি কার্ড
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 15),
             child: Row(
@@ -227,6 +236,7 @@ class _HomeContentState extends State<HomeContent> {
           ),
           const SizedBox(height: 20),
           
+          // ৬. ৪টি অ্যাকশন বাটন
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 15),
             child: Row(
@@ -241,6 +251,7 @@ class _HomeContentState extends State<HomeContent> {
           ),
           const SizedBox(height: 30),
           
+          // ================= মডিউল ও ফিচার =================
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 15),
             child: Text("মডিউল ও ফিচার", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey)),
@@ -256,8 +267,24 @@ class _HomeContentState extends State<HomeContent> {
               crossAxisSpacing: 15,
               childAspectRatio: 1,
               children: [
-                _buildModuleIcon(Icons.people, "সদস্য", Colors.blue),
-                _buildModuleIcon(Icons.person_add, "সদস্য যোগ", Colors.green),
+                // সদস্য তালিকায় যাওয়ার জন্য
+                InkWell(
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const MembersScreen()));
+                  },
+                  borderRadius: BorderRadius.circular(15),
+                  child: _buildModuleIcon(Icons.people, "সদস্য", Colors.blue),
+                ),
+                
+                // 🔥 সদস্য যোগ পেজে যাওয়ার জন্য onTap যুক্ত করা হলো
+                InkWell(
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const AddMemberScreen()));
+                  },
+                  borderRadius: BorderRadius.circular(15),
+                  child: _buildModuleIcon(Icons.person_add, "সদস্য যোগ", Colors.green),
+                ),
+
                 _buildModuleIcon(Icons.group, "কমিটি", Colors.orange),
                 _buildModuleIcon(Icons.assignment_ind, "দায়িত্ব", Colors.purple),
                 _buildModuleIcon(Icons.pie_chart, "শেয়ার", Colors.deepPurple),
@@ -487,6 +514,8 @@ class _HomeContentState extends State<HomeContent> {
       ),
     );
   }
+
+  // ================= কাস্টম উইজেটস =================
 
   Widget _buildInfoCard(String title, String amount, IconData icon, Color color) {
     return Container(
