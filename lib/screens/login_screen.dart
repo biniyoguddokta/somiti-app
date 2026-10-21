@@ -33,56 +33,64 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() { _isLoading = true; });
 
-    var response = await ApiService.getAllMembers();
+    try {
+      var response = await ApiService.getAllMembers();
 
-    if (response is Map && response.containsKey('error')) {
+      if (response is Map && response.containsKey('error')) {
+        setState(() { _isLoading = false; });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(response['error']), backgroundColor: Colors.red),
+        );
+        return;
+      }
+
+      List members = response;
+      bool isAuthenticated = false;
+      String userRole = "Member";
+
+      for (var member in members) {
+        String dbPhone = member['Phone'].toString().trim();
+        String dbPin = member['PIN'].toString().trim();
+        if (dbPhone.endsWith('.0')) dbPhone = dbPhone.replaceAll('.0', '');
+        if (dbPin.endsWith('.0')) dbPin = dbPin.replaceAll('.0', '');
+        if (dbPhone.startsWith('0')) dbPhone = dbPhone.substring(1);
+
+        if (dbPhone == phone && dbPin == pin) {
+          isAuthenticated = true;
+          userRole = member['Role'].toString();
+          break;
+        }
+      }
+
+      if (isAuthenticated) {
+        // মেমোরিতে সেভ করা হচ্ছে
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isLoggedIn', true);
+        await prefs.setString('userPhone', phone);
+        await prefs.setString('userRole', userRole);
+
+        if (!mounted) return;
+        
+        // হোম স্ক্রিনে যাওয়া
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        );
+      } else {
+        setState(() { _isLoading = false; });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("ভুল ফোন নম্বর বা পিন!"), backgroundColor: Colors.red),
+        );
+      }
+    } catch (e) {
+      // যদি কোনো এরর হয়, তবে আটকে না গিয়ে এরর মেসেজ দেখাবে
       setState(() { _isLoading = false; });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(response['error']), backgroundColor: Colors.red),
-      );
-      return;
-    }
-
-    List members = response;
-    bool isAuthenticated = false;
-    String userRole = "Member"; // ডিফল্ট রোল
-
-    for (var member in members) {
-      String dbPhone = member['Phone'].toString().trim();
-      String dbPin = member['PIN'].toString().trim();
-      if (dbPhone.endsWith('.0')) dbPhone = dbPhone.replaceAll('.0', '');
-      if (dbPin.endsWith('.0')) dbPin = dbPin.replaceAll('.0', '');
-      if (dbPhone.startsWith('0')) dbPhone = dbPhone.substring(1);
-
-      if (dbPhone == phone && dbPin == pin) {
-        isAuthenticated = true;
-        userRole = member['Role'].toString(); // রোল সেভ করা হচ্ছে
-        break;
-      }
-    }
-
-    setState(() { _isLoading = false; });
-
-    if (isAuthenticated) {
-      // 🔥 লগইন সেভ করা হচ্ছে ফোনের মেমোরিতে
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('isLoggedIn', true);
-      await prefs.setString('userPhone', phone);
-      await prefs.setString('userRole', userRole); // রোল সেভ করা হলো
-
-      if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("ভুল ফোন নম্বর বা পিন!"), backgroundColor: Colors.red),
+        SnackBar(content: Text("সমস্যা হয়েছে: $e"), backgroundColor: Colors.red),
       );
     }
   }
 
-  // ... নিচের build মেথড আগের মতোই থাকবে, কোনো পরিবর্তন নেই ...
   @override
   Widget build(BuildContext context) {
     return Scaffold(
