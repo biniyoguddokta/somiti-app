@@ -12,6 +12,7 @@ dependencies:
   http: ^1.1.0
   google_fonts: ^6.1.0
   carousel_slider: ^5.0.0
+  shared_preferences: ^2.2.2 # নতুন যোগ করা হলো
 
 dev_dependencies:
   flutter_test:
@@ -20,6 +21,3 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  # আপাতত assets বন্ধ রাখলাম, পরের ধাপে আসল ছবি দিয়ে চালু করবো
-  # assets:
-  #   - assets/
