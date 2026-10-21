@@ -11,10 +11,11 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
-  final CarouselController _carouselController = CarouselController();
+  
+  // এখানে CarouselSliderController ব্যবহার করা হলো
+  final CarouselSliderController _carouselController = CarouselSliderController();
   int _currentBanner = 0;
 
-  // ব্যানার ইমেজের লিস্ট (পরে assets/ যোগ করবেন)
   final List<String> banners = [
     'https://via.placeholder.com/600x200/FFC107/000000?text=Banner+1',
     'https://via.placeholder.com/600x200/00796B/FFFFFF?text=Banner+2',
@@ -24,7 +25,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // বটম নেভিগেশন বার (ফিক্সড থাকবে)
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
@@ -48,7 +48,6 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ১. টপ আইকন (স্ক্রল করলে উপরে চলে যাবে)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
                 child: Row(
@@ -69,8 +68,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
-
-              // ২. অটো স্লাইডিং ব্যানার (৩ সেকেন্ড পরপর)
               CarouselSlider(
                 carouselController: _carouselController,
                 options: CarouselOptions(
@@ -104,8 +101,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 }).toList(),
               ),
               const SizedBox(height: 10),
-              
-              // ব্যানার ডট ইন্ডিকেটর
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: banners.asMap().entries.map((entry) {
@@ -123,8 +118,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                 }).toList(),
               ),
-
-              // ৩. লাল এলার্ট বক্স
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
                 padding: const EdgeInsets.all(15),
@@ -150,8 +143,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
-
-              // ৪. ডাইনামিক শুভেচ্ছা ও নাম
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 15),
                 child: Row(
@@ -166,8 +157,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Text("বিনিয়োগ উদ্যোক্তা", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
               ),
               const SizedBox(height: 20),
-
-              // ৫. ৪টি কার্ড (হাতে নগদ, আজকের জমা, আজকের খরচ, সব লেনদেন)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 15),
                 child: Row(
@@ -181,8 +170,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-
-              // ৬. অ্যাকশন বাটন (জমা, খরচ, আয়, বিনিয়োগ)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 15),
                 child: Row(
@@ -196,8 +183,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 30),
-
-              // ৭. মডিউল ও ফিচার (পরিবর্তিত গ্রিড)
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 15),
                 child: Text("মডিউল ও ফিচার", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey)),
@@ -215,8 +200,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     _buildModuleIcon(Icons.people, "সদস্য", Colors.blue),
                     _buildModuleIcon(Icons.person_add, "সদস্য যোগ", Colors.green),
-                    _buildModuleIcon(Icons.group, "কমিটি", Colors.orange), // নাম পরিবর্তন
-                    _buildModuleIcon(Icons.assignment_ind, "দায়িত্ব", Colors.purple), // নাম পরিবর্তন
+                    _buildModuleIcon(Icons.group, "কমিটি", Colors.orange),
+                    _buildModuleIcon(Icons.assignment_ind, "দায়িত্ব", Colors.purple),
                     _buildModuleIcon(Icons.pie_chart, "শেয়ার", Colors.deepPurple),
                     _buildModuleIcon(Icons.bar_chart, "রিপোর্ট", Colors.indigo),
                     _buildModuleIcon(Icons.fastfood, "ফান্ড", Colors.blueAccent),
@@ -228,7 +213,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     _buildModuleIcon(Icons.campaign, "নোটিশ", Colors.deepOrange),
                     _buildModuleIcon(Icons.inventory, "স্টক", Colors.purple),
                     _buildModuleIcon(Icons.people_outline, "পরিচালক", Colors.blue),
-                    _buildModuleIcon(Icons.grid_view, "আরও", Colors.grey), // টান সমিতি বাদ
+                    _buildModuleIcon(Icons.grid_view, "আরও", Colors.grey),
                   ],
                 ),
               ),
@@ -240,7 +225,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // কাস্টম কার্ড উইজেট
   Widget _buildInfoCard(String title, String amount, IconData icon, Color color) {
     return Container(
       width: 80,
@@ -262,7 +246,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // কাস্টম অ্যাকশন বাটন উইজেট
   Widget _buildActionButton(String title, IconData icon, Color color) {
     return Expanded(
       child: Container(
@@ -284,7 +267,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // কাস্টম মডিউল আইকন উইজেট
   Widget _buildModuleIcon(IconData icon, String label, Color color) {
     return Container(
       decoration: BoxDecoration(
