@@ -2,21 +2,24 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  // ⚠️ এখানে আপনার Apps Script URL দিন (যেটি Deploy করার পর পেয়েছেন)
-  static const String baseUrl = 'https://script.google.com/macros/s/AKfycbzu3cVu5OLUujiqdaFz6siX7AEk_s7jjrxjbhj641aYhAnNraK6JenS11ZIks1eOn0_/exec';
+  // ⚠️ এখানে আপনার Apps Script URL দিন (শেষে /exec আছে কি না দেখুন)
+  static const String baseUrl = 'https://script.google.com/macros/s/AKfycbym4x7w8O8My3nxHibkCIxXlvFpTEmJnOd7LQMsAt07gFdJ0h_ixzMI2GIDLAvax5pwAg/exec';
 
-  // সব সদস্যের ডেটা আনার ফাংশন
-  static Future<List<dynamic>> getAllMembers() async {
+  static Future<dynamic> getAllMembers() async {
     try {
       final response = await http.get(Uri.parse('$baseUrl?action=getAllMembers'));
+      
       if (response.statusCode == 200) {
+        // চেক করা হচ্ছে ডেটা JSON কি না (গুগল লগইন পেজ আসলে এই এরর দেখাবে)
+        if (response.body.contains("<!DOCTYPE html>")) {
+          return {"error": "API লিংকটি ভুল বা গুগল লগইন চাচ্ছে। Deploy আবার চেক করুন।"};
+        }
         return jsonDecode(response.body);
       } else {
-        throw Exception("Failed to load data");
+        return {"error": "সার্ভার এরর: ${response.statusCode}"};
       }
     } catch (e) {
-      print("Error: $e");
-      return [];
+      return {"error": "ইন্টারনেট সমস্যা বা কোডে ভুল আছে: $e"};
     }
   }
 }
