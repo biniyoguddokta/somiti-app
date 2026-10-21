@@ -13,6 +13,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _pinController = TextEditingController();
   bool _isLoading = false;
+  bool _isPasswordVisible = false; // পাসওয়ার্ড শো/হাইড এর জন্য
 
   // লগইন ফাংশন
   void _login() async {
@@ -35,7 +36,18 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() { _isLoading = true; });
 
     // ২. গুগল শিট থেকে ডেটা চেক করা
-    var members = await ApiService.getAllMembers();
+    var response = await ApiService.getAllMembers();
+
+    // যদি API থেকে কোনো এরর আসে, তবে সেটি শো করবে
+    if (response is Map && response.containsKey('error')) {
+      setState(() { _isLoading = false; });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(response['error']), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    List members = response;
     bool isAuthenticated = false;
 
     for (var member in members) {
@@ -150,17 +162,27 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 20),
                         
-                        // পিন ইনপুট
+                        // পিন ইনপুট (Show/Hide আইকনসহ)
                         const Text("পিন", style: TextStyle(fontWeight: FontWeight.bold)),
                         const SizedBox(height: 10),
                         TextField(
                           controller: _pinController,
-                          obscureText: true,
+                          obscureText: !_isPasswordVisible, // পাসওয়ার্ড দৃশ্যমান বা অদৃশ্যমান করার লজিক
                           keyboardType: TextInputType.number,
                           decoration: InputDecoration(
                             filled: true,
                             fillColor: Colors.grey[100],
                             prefixIcon: const Icon(Icons.password),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _isPasswordVisible ? Icons.visibility : Icons.visibility_off, // চোখের আইকন
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _isPasswordVisible = !_isPasswordVisible; // ক্লিক করলে টগল হবে
+                                });
+                              },
+                            ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(15),
                               borderSide: BorderSide.none,
