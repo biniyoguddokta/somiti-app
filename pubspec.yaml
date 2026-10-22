@@ -1,5 +1,5 @@
 name: somiti_app
-description: A new Flutter project.
+description: A new Flutter project for Somiti App.
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -9,11 +9,21 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  
+  # API ও ইন্টারনেটের জন্য
   http: ^1.1.0
+  
+  # বাংলা ফন্টের জন্য
   google_fonts: ^6.1.0
+  
+  # ব্যানার স্লাইডারের জন্য
   carousel_slider: ^5.0.0
-  # এখানে কারেট (^) চিহ্ন ছাড়া নির্দিষ্ট ভার্সন দেওয়া হলো, যাতে এটি আর অটো-আপডেট না হয়ে এরর না দেয়
+  
+  # লগইন সেশন সেভ রাখার জন্য (R8 ক্র্যাশ এড়াতে নির্দিষ্ট ভার্সন)
   shared_preferences: 2.2.2 
+  
+  # তারিখ ও সময় ফরম্যাট করার জন্য (ড্যাশবোর্ডের আজকের জমা/খরচের জন্য)
+  intl: ^0.18.1
 
 dev_dependencies:
   flutter_test:
@@ -22,6 +32,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  # আপাতত assets বন্ধ রাখা হলো, পরে আসল ছবি দিলে চালু করবেন
+  
+  # আপনার আসল ব্যানার ও লোগো assets ফোল্ডারে দিলে নিচের লাইন দুটো আনকমেন্ট করবেন
   # assets:
   #   - assets/
