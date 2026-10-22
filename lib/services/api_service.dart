@@ -2,11 +2,22 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  static const String baseUrl = 'https://script.google.com/macros/s/AKfycby8WDNL-Mvy34P04vw_zbkexLjE8OjqDIXVlP7HYS6Bq6R_v8SEqhLPx3sL0Q89YdvetQ/exec'; // 🔥 আপনার URL দিন
+  static const String baseUrl = 'YOUR_APPS_SCRIPT_URL_HERE'; // 🔥 আপনার URL দিন
 
   static Future<dynamic> getAllMembers() async {
     try {
       final res = await http.get(Uri.parse('$baseUrl?action=getAllMembers'));
+      if (res.statusCode == 200) {
+        if (res.body.contains("<!DOCTYPE html>")) return {"error": "API লিংক ভুল বা পারমিশন নেই"};
+        return jsonDecode(res.body);
+      }
+      return {"error": "সার্ভার এরর: ${res.statusCode}"};
+    } catch (e) { return {"error": "ইন্টারনেট সমস্যা: $e"}; }
+  }
+
+  static Future<dynamic> getTransactions() async {
+    try {
+      final res = await http.get(Uri.parse('$baseUrl?action=getTransactions'));
       if (res.statusCode == 200) {
         if (res.body.contains("<!DOCTYPE html>")) return {"error": "API লিংক ভুল বা পারমিশন নেই"};
         return jsonDecode(res.body);
@@ -22,8 +33,17 @@ class ApiService {
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({"name": name, "phone": phone, "email": email, "pin": pin, "role": role}),
       );
-      if (res.statusCode == 200) {
-        if (res.body.contains("<!DOCTYPE html>")) return {"status": "error", "message": "গুগল পারমিশন চাচ্ছে। Apps Script চেক করুন।"};
+      
+      // 🔥 এখানে 302 চেক করা হয়েছে
+      if (res.statusCode == 200 || res.statusCode == 302) {
+        // যদি HTML পেজ আসে (অনুমতি না থাকলে)
+        if (res.body.contains("<!DOCTYPE html>")) {
+          return {"status": "error", "message": "গুগল পারমিশন চাচ্ছে। Apps Script চেক করুন।"};
+        }
+        // যদি 302 আসে, তবে ডেটা আগেই সেভ হয়ে গেছে
+        if (res.statusCode == 302) {
+            return {"status": "success", "message": "সদস্য যোগ হয়েছে (302)"};
+        }
         return jsonDecode(res.body);
       }
       return {"status": "error", "message": "সার্ভার এরর: ${res.statusCode}"};
@@ -37,8 +57,15 @@ class ApiService {
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({"type": type, "amount": amount, "note": note, "memberName": memberName}),
       );
-      if (res.statusCode == 200) {
-        if (res.body.contains("<!DOCTYPE html>")) return {"status": "error", "message": "গুগল পারমিশন চাচ্ছে।"};
+      
+      // 🔥 এখানে 302 চেক করা হয়েছে
+      if (res.statusCode == 200 || res.statusCode == 302) {
+        if (res.body.contains("<!DOCTYPE html>")) {
+          return {"status": "error", "message": "গুগল পারমিশন চাচ্ছে।"};
+        }
+        if (res.statusCode == 302) {
+            return {"status": "success", "message": "লেনদেন সেভ হয়েছে (302)"};
+        }
         return jsonDecode(res.body);
       }
       return {"status": "error", "message": "সার্ভার এরর: ${res.statusCode}"};
@@ -52,8 +79,15 @@ class ApiService {
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({"phone": phone, "newRole": newRole}),
       );
-      if (res.statusCode == 200) {
-        if (res.body.contains("<!DOCTYPE html>")) return {"status": "error", "message": "গুগল পারমিশন চাচ্ছে।"};
+      
+      // 🔥 এখানে 302 চেক করা হয়েছে
+      if (res.statusCode == 200 || res.statusCode == 302) {
+        if (res.body.contains("<!DOCTYPE html>")) {
+          return {"status": "error", "message": "গুগল পারমিশন চাচ্ছে।"};
+        }
+        if (res.statusCode == 302) {
+            return {"status": "success", "message": "রোল আপডেট হয়েছে (302)"};
+        }
         return jsonDecode(res.body);
       }
       return {"status": "error", "message": "সার্ভার এরর: ${res.statusCode}"};
