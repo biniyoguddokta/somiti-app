@@ -35,16 +35,13 @@ class ApiService {
   static Future<dynamic> getAllMembers() => _getData("getAllMembers");
   static Future<Map<String, dynamic>> addMember({required String name, required String phone, required String email, required String pin, required String role, required String designation}) 
     => _postData("addMember", {"name": name, "phone": phone, "email": email, "pin": pin, "role": role, "designation": designation});
-
   static Future<Map<String, dynamic>> updateRole({required String phone, required String newRole}) 
     => _postData("updateRole", {"phone": phone, "newRole": newRole});
 
-  // Transactions (জমা, খরচ, বকেয়া)
+  // Transactions
   static Future<dynamic> getTransactions() => _getData("getTransactions");
   static Future<Map<String, dynamic>> addTransaction({required String type, required String amount, required String note, required String memberName, required String status}) 
     => _postData("addTransaction", {"type": type, "amount": amount, "note": note, "memberName": memberName, "status": status});
-  
-  // Update Transaction Status (For Due payment)
   static Future<Map<String, dynamic>> updateTransactionStatus({required String rowIndex, required String status})
     => _postData("updateTransactionStatus", {"rowIndex": rowIndex, "status": status});
 
@@ -53,16 +50,9 @@ class ApiService {
   static Future<Map<String, dynamic>> addInvestment({required String sector, required String projectName, required String investAmount, required String startDate, required String endDate, required String profitAmount}) 
     => _postData("addInvestment", {"sector": sector, "projectName": projectName, "investAmount": investAmount, "startDate": startDate, "endDate": endDate, "profitAmount": profitAmount});
 
-  // Constitution (গঠনতন্ত্র)
+  // Constitution
   static Future<dynamic> getConstitution() => _getData("getConstitution");
-  static Future<Map<String, dynamic>> addConstitution({required String title, required String content}) 
-    => _postData("addConstitution", {"title": title, "content": content});
-
-  // Videos
-  static Future<dynamic> getVideos() => _getData("getVideos");
-
-  // Settings (App settings, About App, etc.)
-  static Future<dynamic> getSettings() => _getData("getSettings");
-  static Future<Map<String, dynamic>> updateSetting({required String key, required String value}) 
-    => _postData("updateSetting", {"key": key, "value": value});
+  
+  // Late Fees
+  static Future<dynamic> getLateFees() => _getData("getLateFees");
 }
