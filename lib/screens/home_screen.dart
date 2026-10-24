@@ -10,6 +10,9 @@ import 'add_member_screen.dart';
 import 'more_screen.dart';
 import 'add_transaction_screen.dart';
 import 'collection_screen.dart';
+import 'constitution_screen.dart';
+import 'late_fee_screen.dart';
+import 'meeting_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,7 +22,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
-  
   final GlobalKey<HomeContentState> _homeKey = GlobalKey<HomeContentState>();
 
   @override
@@ -33,6 +35,41 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
 
     return Scaffold(
+      // 🔥 বাম দিকের ড্রয়ার মেনু
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            const DrawerHeader(
+              decoration: BoxDecoration(color: Color(0xFF00796B)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text("বিনিয়োগ উদ্যোক্তা", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                  SizedBox(height: 5),
+                  Text("সব হিসাব এক অ্যাপে", style: TextStyle(color: Colors.white70, fontSize: 14)),
+                ],
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.calendar_month, color: Color(0xFF00796B)),
+              title: const Text("সভা (মিটিং)"),
+              onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (c) => const MeetingScreen())); },
+            ),
+            ListTile(
+              leading: const Icon(Icons.money_off, color: Colors.red),
+              title: const Text("বিলম্ব ফী"),
+              onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (c) => const LateFeeScreen())); },
+            ),
+            ListTile(
+              leading: const Icon(Icons.menu_book, color: Colors.blue),
+              title: const Text("গঠনতন্ত্র"),
+              onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (c) => const ConstitutionScreen())); },
+            ),
+          ],
+        ),
+      ),
       body: SafeArea(child: pages[_selectedIndex]),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
@@ -41,9 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
         unselectedItemColor: Colors.grey,
         onTap: (index) {
           setState(() => _selectedIndex = index);
-          if(index == 0) {
-            _homeKey.currentState?.fetchDashboardData();
-          }
+          if(index == 0) _homeKey.currentState?.fetchDashboardData();
         },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: "হোম"),
@@ -69,17 +104,17 @@ class HomeContentState extends State<HomeContent> {
   String userName = "Admin";
   String userRole = "Member";
   bool _isLoadingStats = true;
+  bool _showTotalAssets = false;
 
-  // ড্যাশবোর্ডের হিসাবের ভ্যারিয়েবল
   double cashInHand = 0.0;
   double todayDeposit = 0.0;
   double todayExpense = 0.0;
   int totalTransactions = 0;
+  List<dynamic> recentTransactions = [];
 
   final List<String> banners = [
     'https://via.placeholder.com/800x300/00796B/FFFFFF?text=Banner+1',
     'https://via.placeholder.com/800x300/F44336/FFFFFF?text=Banner+2',
-    'https://via.placeholder.com/800x300/113/FFC107/000000?text=Banner+3',
   ];
 
   @override
@@ -97,20 +132,13 @@ class HomeContentState extends State<HomeContent> {
     });
   }
 
-  // 🔥 সময় অনুযায়ী শুভেচ্ছা বের করার ফাংশন
   String getGreeting() {
     var hour = DateTime.now().hour;
-    if (hour >= 5 && hour < 12) {
-      return "শুভ সকাল"; // সকাল ৫টা থেকে দুপুর ১২টা
-    } else if (hour >= 12 && hour < 16) {
-      return "শুভ দুপুর"; // দুপুর ১২টা থেকে বিকাল ৪টা
-    } else if (hour >= 16 && hour < 18) {
-      return "শুভ বিকাল"; // বিকাল ৪টা থেকে সন্ধ্যা ৬টা
-    } else if (hour >= 18 && hour < 20) {
-      return "শুভ সন্ধ্যা"; // সন্ধ্যা ৬টা থেকে রাত ৮টা
-    } else {
-      return "শুভ রাত্রি"; // রাত ৮টা থেকে ভোর ৫টা
-    }
+    if (hour >= 5 && hour < 12) return "শুভ সকাল";
+    if (hour >= 12 && hour < 16) return "শুভ দুপুর";
+    if (hour >= 16 && hour < 18) return "শুভ বিকাল";
+    if (hour >= 18 && hour < 20) return "শুভ সন্ধ্যা";
+    return "শুভ রাত্রি";
   }
 
   Future<void> fetchDashboardData() async {
@@ -122,6 +150,7 @@ class HomeContentState extends State<HomeContent> {
       double tempTodayDeposit = 0.0;
       double tempTodayExpense = 0.0;
       int tempTotalTx = response.length;
+      List<dynamic> tempRecent = [];
 
       String todayDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
@@ -130,11 +159,8 @@ class HomeContentState extends State<HomeContent> {
         double amount = double.tryParse(tx['Amount'].toString()) ?? 0.0;
         String dateStr = tx['Date'].toString();
 
-        if (type == 'জমা' || type == 'আয়' || type == 'বিনিয়োগ') {
-          tempCash += amount;
-        } else if (type == 'খরচ') {
-          tempCash -= amount;
-        }
+        if (type == 'জমা' || type == 'আয়' || type == 'বিনিয়োগ') tempCash += amount;
+        else if (type == 'খরচ') tempCash -= amount;
 
         if (dateStr.contains(todayDate)) {
           if (type == 'জমা') tempTodayDeposit += amount;
@@ -142,11 +168,19 @@ class HomeContentState extends State<HomeContent> {
         }
       }
 
+      // সাম্প্রতিক ৫টি লেনদেন নেওয়া (উল্টো করে, যাতে নতুন আগে থাকে)
+      if (response.length > 5) {
+        tempRecent = response.sublist(response.length - 5).reversed.toList();
+      } else {
+        tempRecent = response.reversed.toList();
+      }
+
       setState(() {
         cashInHand = tempCash;
         todayDeposit = tempTodayDeposit;
         todayExpense = tempTodayExpense;
         totalTransactions = tempTotalTx;
+        recentTransactions = tempRecent;
         _isLoadingStats = false;
       });
     } else {
@@ -163,21 +197,19 @@ class HomeContentState extends State<HomeContent> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ১. টপ আইকন
+            // ১. টপ আইকন (শুধু মেনু ও প্রোফাইল)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Icon(Icons.menu, color: Color(0xFF00796B), size: 30),
-                  Row(
-                    children: const [
-                      Icon(Icons.person, color: Color(0xFF00796B)), SizedBox(width: 15),
-                      Icon(Icons.headset_mic, color: Color(0xFF00796B)), SizedBox(width: 15),
-                      Icon(Icons.notifications, color: Color(0xFF00796B)), SizedBox(width: 15),
-                      Icon(Icons.help_outline, color: Color(0xFF00796B)),
-                    ],
-                  )
+                  Builder(
+                    builder: (context) => IconButton(
+                      icon: const Icon(Icons.menu, color: Color(0xFF00796B), size: 30),
+                      onPressed: () => Scaffold.of(context).openDrawer(),
+                    ),
+                  ),
+                  const Icon(Icons.person, color: Color(0xFF00796B), size: 30),
                 ],
               ),
             ),
@@ -202,7 +234,7 @@ class HomeContentState extends State<HomeContent> {
             ),
             const SizedBox(height: 10),
             
-            // ৩. লাল বক্স
+            // ৩. লাল বক্স (বকেয়া)
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
               padding: const EdgeInsets.all(15),
@@ -222,7 +254,7 @@ class HomeContentState extends State<HomeContent> {
               ),
             ),
 
-            // ৪. ডাইনামিক শুভেচ্ছা (এখন সময় অনুযায়ী পরিবর্তন হবে)
+            // ৪. ডাইনামিক শুভেচ্ছা
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15),
               child: Row(children: [
@@ -233,7 +265,31 @@ class HomeContentState extends State<HomeContent> {
             const Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("বিনিয়োগ উদ্যোক্তা", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold))),
             const SizedBox(height: 20),
             
-            // ৫. ৪টি কার্ড
+            // 🔥 ৫. মোট সম্পদ (Tap for Balance)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 15),
+              child: GestureDetector(
+                onTap: () => setState(() => _showTotalAssets = !_showTotalAssets),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF8E24AA), // পার্পল কালার
+                    borderRadius: BorderRadius.circular(15),
+                    boxShadow: [BoxShadow(color: const Color(0xFF8E24AA).withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))],
+                  ),
+                  child: Center(
+                    child: Text(
+                      _showTotalAssets ? "৳ ${cashInHand.toStringAsFixed(0)}" : "Tap for Balance",
+                      style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            
+            // ৬. ৪টি কার্ড
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15),
               child: _isLoadingStats 
@@ -250,7 +306,7 @@ class HomeContentState extends State<HomeContent> {
             ),
             const SizedBox(height: 20),
             
-            // ৬. ৪টি অ্যাকশন বাটন
+            // ৭. ৪টি অ্যাকশন বাটন
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15),
               child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
@@ -262,7 +318,7 @@ class HomeContentState extends State<HomeContent> {
             ),
             const SizedBox(height: 30),
             
-            // ৭. মডিউল ও ফিচার
+            // ৮. মডিউল ও ফিচার
             const Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("মডিউল ও ফিচার", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey))),
             const SizedBox(height: 15),
             Padding(
@@ -292,78 +348,31 @@ class HomeContentState extends State<HomeContent> {
             ),
             const SizedBox(height: 30),
 
-            // ================= স্ক্রিনশট ৪ (SMS ও চার্ট) =================
-            const Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("SMS", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey))),
+            // 🔥 ৯. সাম্প্রতিক লেনদেন (SMS এর উপরে)
+            const Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("সাম্প্রতিক লেনদেন", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey))),
             const SizedBox(height: 15),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15),
-              child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                _buildSmsIcon(Icons.sms, "SMS ক্রেডিট", const Color(0xFF43A047)),
-                _buildSmsIcon(Icons.chat_bubble_outline, "SMS টেম্পলেট", Colors.blue),
-                _buildSmsIcon(Icons.campaign, "বাংক SMS", Colors.orange),
-                _buildSmsIcon(Icons.history, "SMS ইতিহাস", Colors.teal),
-              ]),
-            ),
-            const SizedBox(height: 30),
-
-            const Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("চার্ট ও বিশ্লেষণ", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey))),
-            const SizedBox(height: 15),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 15),
-              child: Container(
-                padding: const EdgeInsets.all(15),
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5)]),
-                child: Column(children: [
-                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                    const Row(children: [Icon(Icons.show_chart, color: Color(0xFF00796B)), SizedBox(width: 10), Text("আদায় প্রবণতা", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))]),
-                    Row(children: [
-                      Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5), decoration: BoxDecoration(color: const Color(0xFF00796B), borderRadius: BorderRadius.circular(20)), child: const Text("৭ দিন", style: TextStyle(color: Colors.white, fontSize: 12))),
-                      const SizedBox(width: 10),
-                      Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5), decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(20)), child: const Text("৩০ দিন", style: TextStyle(color: Color(0xFF00796B), fontSize: 12))),
-                    ])
-                  ]),
-                  const SizedBox(height: 60),
-                  const Text("এই সময়ে কোনো আদায় নেই", style: TextStyle(color: Colors.grey, fontSize: 16)),
-                  const SizedBox(height: 60),
-                ]),
-              ),
-            ),
-            const SizedBox(height: 30),
-
-            // ================= স্ক্রিনশট ৫ (সেটিংস ও ভাষা) =================
-            const Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("সেটিংস, শেখা ও সাহায্য", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey))),
-            const SizedBox(height: 15),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 15),
-              child: Row(children: [
-                Expanded(child: _buildSettingsCard(Icons.settings, "অ্যাপ সেটিংস", "শব্দ ও কম্পন", Colors.teal)),
-                const SizedBox(width: 15),
-                Expanded(child: _buildSettingsCard(Icons.settings_suggest, "উদ্যোক্তা সেটিংস", "ভাষা, দশমিক ও নিয়ম", Colors.green)),
-              ]),
-            ),
-            const SizedBox(height: 15),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 15),
-              child: Row(children: [
-                Expanded(child: _buildSettingsCard(Icons.play_circle_fill, "ভিডিও টিউটোরিয়াল", "দেখে দেখে শিখুন", Colors.red)),
-                const SizedBox(width: 15),
-                Expanded(child: _buildSettingsCard(Icons.menu_book, "নির্দেশিকা", "প্রতিটি পাতার ম্যানুয়াল", Colors.orange)),
-              ]),
-            ),
-            const SizedBox(height: 25),
-
-            SizedBox(
-              height: 120,
-              child: CarouselSlider(
-                options: CarouselOptions(autoPlay: true, autoPlayInterval: const Duration(seconds: 3), enlargeCenterPage: true, viewportFraction: 0.9),
-                items: banners.map((bannerUrl) => Builder(
-                  builder: (context) => Container(
-                    width: MediaQuery.of(context).size.width,
-                    margin: const EdgeInsets.symmetric(horizontal: 5.0),
-                    child: ClipRRect(borderRadius: BorderRadius.circular(15), child: Image.network(bannerUrl, fit: BoxFit.fill, errorBuilder: (c, e, s) => const Center(child: Icon(Icons.broken_image)))),
-                  ),
-                )).toList(),
-              ),
+              child: recentTransactions.isEmpty
+                  ? const Center(child: Text("কোনো লেনদেন নেই"))
+                  : Column(
+                      children: recentTransactions.map((tx) {
+                        bool isDeposit = tx['Type'] == 'জমা';
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: isDeposit ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                              child: Icon(isDeposit ? Icons.arrow_downward : Icons.arrow_upward, color: isDeposit ? Colors.green : Colors.red),
+                            ),
+                            title: Text(tx['Type'].toString(), style: TextStyle(fontWeight: FontWeight.bold, color: isDeposit ? Colors.green : Colors.red)),
+                            subtitle: Text("${tx['MemberName']} | ${tx['Date'].toString().split(' ')[0]}"),
+                            trailing: Text("৳ ${tx['Amount']}", style: TextStyle(fontWeight: FontWeight.bold, color: isDeposit ? Colors.green : Colors.red)),
+                          ),
+                        );
+                      }).toList(),
+                    ),
             ),
             const SizedBox(height: 30),
           ],
@@ -371,8 +380,6 @@ class HomeContentState extends State<HomeContent> {
       ),
     );
   }
-
-  // ================= কাস্টম উইজেটস =================
 
   Widget _buildInfoCard(String title, String amount, IconData icon, Color color) {
     return Container(
@@ -414,29 +421,6 @@ class HomeContentState extends State<HomeContent> {
         Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(12)), child: Icon(icon, color: color, size: 28)),
         const SizedBox(height: 8),
         Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-      ]),
-    );
-  }
-
-  Widget _buildSmsIcon(IconData icon, String label, Color color) {
-    return Column(children: [
-      Container(padding: const EdgeInsets.all(15), decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(15)), child: Icon(icon, color: color, size: 30)),
-      const SizedBox(height: 8),
-      Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-    ]);
-  }
-
-  Widget _buildSettingsCard(IconData icon, String title, String subtitle, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.grey.shade200)),
-      child: Row(children: [
-        Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(10)), child: Icon(icon, color: color)),
-        const SizedBox(width: 10),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-          Text(subtitle, style: const TextStyle(color: Colors.grey, fontSize: 10)),
-        ])),
       ]),
     );
   }
