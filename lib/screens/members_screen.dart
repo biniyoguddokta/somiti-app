@@ -59,7 +59,7 @@ class _MembersScreenState extends State<MembersScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA), // 🔥 কালো স্ক্রিন ফিক্স
+      backgroundColor: const Color(0xFFF5F7FA), // ব্যাকগ্রাউন্ড কালার
       appBar: AppBar(
         title: const Text("সদস্য তালিকা"),
         backgroundColor: const Color(0xFF00796B),
@@ -70,7 +70,6 @@ class _MembersScreenState extends State<MembersScreen> {
       ),
       body: Column(
         children: [
-          // সার্চ বার
           Padding(
             padding: const EdgeInsets.all(15),
             child: TextField(
@@ -85,14 +84,13 @@ class _MembersScreenState extends State<MembersScreen> {
               ),
             ),
           ),
-
-          // সদস্য লিস্ট
           Expanded(
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : filteredMembers.isEmpty
                     ? const Center(child: Text("কোনো সদস্য পাওয়া যায়নি!"))
                     : ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(), // ধূসর জায়গা ফিক্স
                         padding: const EdgeInsets.symmetric(horizontal: 15),
                         itemCount: filteredMembers.length,
                         itemBuilder: (context, index) {
@@ -102,7 +100,7 @@ class _MembersScreenState extends State<MembersScreen> {
                           String designation = member['Designation']?.toString() ?? (isAdmin ? "প্রতিষ্ঠাতা / অ্যাডমিন" : "সদস্য");
 
                           return Card(
-                            color: Colors.white, // 🔥 কার্ডের কালার ফিক্স
+                            color: Colors.white,
                             elevation: 1,
                             margin: const EdgeInsets.only(bottom: 12),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15), side: BorderSide(color: Colors.grey.shade200)),
