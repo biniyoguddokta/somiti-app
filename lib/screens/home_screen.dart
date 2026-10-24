@@ -4,7 +4,10 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart'; 
 
+// সার্ভিস ইমপোর্ট
 import '../services/api_service.dart';
+
+// স্ক্রিন ইমপোর্ট
 import 'members_screen.dart';
 import 'add_member_screen.dart';
 import 'more_screen.dart';
@@ -13,6 +16,8 @@ import 'collection_screen.dart';
 import 'constitution_screen.dart';
 import 'late_fee_screen.dart';
 import 'meeting_screen.dart';
+import 'due_list_screen.dart'; // নতুন যুক্ত হলো (বকেয়া লিস্টের জন্য)
+import 'report_screen.dart'; // নতুন যুক্ত হলো (চার্টের জন্য)
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -30,12 +35,12 @@ class _HomeScreenState extends State<HomeScreen> {
       HomeContent(key: _homeKey),
       const MembersScreen(),
       const CollectionScreen(),
-      const Center(child: Text("রিপোর্ট পেজ (শীঘ্রই আসছে)")),
+      const ReportScreen(), // 🔥 ৩ নং ইনডেক্সে রিপোর্ট স্ক্রিন কানেক্ট করা হলো
       const MoreScreen(),
     ];
 
     return Scaffold(
-      // 🔥 বাম দিকের ড্রয়ার মেনু
+      // 🔥 বাম দিকের ড্রয়ার মেনু (সভা, বিলম্ব ফী, গঠনতন্ত্র)
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
@@ -55,17 +60,26 @@ class _HomeScreenState extends State<HomeScreen> {
             ListTile(
               leading: const Icon(Icons.calendar_month, color: Color(0xFF00796B)),
               title: const Text("সভা (মিটিং)"),
-              onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (c) => const MeetingScreen())); },
+              onTap: () { 
+                Navigator.pop(context); 
+                Navigator.push(context, MaterialPageRoute(builder: (c) => const MeetingScreen())); 
+              },
             ),
             ListTile(
               leading: const Icon(Icons.money_off, color: Colors.red),
               title: const Text("বিলম্ব ফী"),
-              onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (c) => const LateFeeScreen())); },
+              onTap: () { 
+                Navigator.pop(context); 
+                Navigator.push(context, MaterialPageRoute(builder: (c) => const LateFeeScreen())); 
+              },
             ),
             ListTile(
               leading: const Icon(Icons.menu_book, color: Colors.blue),
               title: const Text("গঠনতন্ত্র"),
-              onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (c) => const ConstitutionScreen())); },
+              onTap: () { 
+                Navigator.pop(context); 
+                Navigator.push(context, MaterialPageRoute(builder: (c) => const ConstitutionScreen())); 
+              },
             ),
           ],
         ),
@@ -78,7 +92,7 @@ class _HomeScreenState extends State<HomeScreen> {
         unselectedItemColor: Colors.grey,
         onTap: (index) {
           setState(() => _selectedIndex = index);
-          if(index == 0) _homeKey.currentState?.fetchDashboardData();
+          if (index == 0) _homeKey.currentState?.fetchDashboardData();
         },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: "হোম"),
@@ -92,6 +106,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
+// ================= ড্যাশবোর্ডের মূল অংশ =================
+
 class HomeContent extends StatefulWidget {
   const HomeContent({super.key});
   @override
@@ -104,8 +120,9 @@ class HomeContentState extends State<HomeContent> {
   String userName = "Admin";
   String userRole = "Member";
   bool _isLoadingStats = true;
-  bool _showTotalAssets = false;
+  bool _showTotalAssets = false; // মোট সম্পদ দেখানোর টগল
 
+  // ড্যাশবোর্ডের হিসাবের ভ্যারিয়েবল
   double cashInHand = 0.0;
   double todayDeposit = 0.0;
   double todayExpense = 0.0;
@@ -115,6 +132,7 @@ class HomeContentState extends State<HomeContent> {
   final List<String> banners = [
     'https://via.placeholder.com/800x300/00796B/FFFFFF?text=Banner+1',
     'https://via.placeholder.com/800x300/F44336/FFFFFF?text=Banner+2',
+    'https://via.placeholder.com/800x300/113/FFC107/000000?text=Banner+3',
   ];
 
   @override
@@ -132,6 +150,7 @@ class HomeContentState extends State<HomeContent> {
     });
   }
 
+  // সময় অনুযায়ী শুভেচ্ছা
   String getGreeting() {
     var hour = DateTime.now().hour;
     if (hour >= 5 && hour < 12) return "শুভ সকাল";
@@ -141,6 +160,7 @@ class HomeContentState extends State<HomeContent> {
     return "শুভ রাত্রি";
   }
 
+  // ড্যাশবোর্ডের ডেটা লোড
   Future<void> fetchDashboardData() async {
     setState(() => _isLoadingStats = true);
     var response = await ApiService.getTransactions();
@@ -159,16 +179,18 @@ class HomeContentState extends State<HomeContent> {
         double amount = double.tryParse(tx['Amount'].toString()) ?? 0.0;
         String dateStr = tx['Date'].toString();
 
+        // হাতে নগদ হিসাব
         if (type == 'জমা' || type == 'আয়' || type == 'বিনিয়োগ') tempCash += amount;
         else if (type == 'খরচ') tempCash -= amount;
 
+        // আজকের হিসাব
         if (dateStr.contains(todayDate)) {
           if (type == 'জমা') tempTodayDeposit += amount;
           if (type == 'খরচ') tempTodayExpense += amount;
         }
       }
 
-      // সাম্প্রতিক ৫টি লেনদেন নেওয়া (উল্টো করে, যাতে নতুন আগে থাকে)
+      // সাম্প্রতিক ৫টি লেনদেন নেওয়া
       if (response.length > 5) {
         tempRecent = response.sublist(response.length - 5).reversed.toList();
       } else {
@@ -197,7 +219,7 @@ class HomeContentState extends State<HomeContent> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ১. টপ আইকন (শুধু মেনু ও প্রোফাইল)
+            // ১. টপ আইকন
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
               child: Row(
@@ -234,23 +256,28 @@ class HomeContentState extends State<HomeContent> {
             ),
             const SizedBox(height: 10),
             
-            // ৩. লাল বক্স (বকেয়া)
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-              padding: const EdgeInsets.all(15),
-              decoration: BoxDecoration(color: const Color(0xFFE53935), borderRadius: BorderRadius.circular(15)),
-              child: Row(
-                children: const [
-                  Icon(Icons.lock_clock, color: Colors.white, size: 35), SizedBox(width: 15),
-                  Expanded(child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("সদস্য যাদের জমা বকেয়া আছে", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                      SizedBox(height: 5), Text("বকেয়া গুলো দেখতে ট্যাপ করুন", style: TextStyle(color: Colors.white70, fontSize: 14)),
-                    ],
-                  )),
-                  Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
-                ],
+            // ৩. লাল বক্স (বকেয়া লিস্টে যাওয়ার লিংক)
+            InkWell(
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (c) => const DueListScreen()));
+              },
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                padding: const EdgeInsets.all(15),
+                decoration: BoxDecoration(color: const Color(0xFFE53935), borderRadius: BorderRadius.circular(15)),
+                child: Row(
+                  children: const [
+                    Icon(Icons.lock_clock, color: Colors.white, size: 35), SizedBox(width: 15),
+                    Expanded(child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("সদস্য যাদের জমা বকেয়া আছে", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                        SizedBox(height: 5), Text("বকেয়া গুলো দেখতে ট্যাপ করুন", style: TextStyle(color: Colors.white70, fontSize: 14)),
+                      ],
+                    )),
+                    Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
+                  ],
+                ),
               ),
             ),
 
@@ -265,7 +292,7 @@ class HomeContentState extends State<HomeContent> {
             const Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("বিনিয়োগ উদ্যোক্তা", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold))),
             const SizedBox(height: 20),
             
-            // 🔥 ৫. মোট সম্পদ (Tap for Balance)
+            // ৫. মোট সম্পদ (Tap for Balance)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15),
               child: GestureDetector(
@@ -274,7 +301,7 @@ class HomeContentState extends State<HomeContent> {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 15),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF8E24AA), // পার্পল কালার
+                    color: const Color(0xFF8E24AA), 
                     borderRadius: BorderRadius.circular(15),
                     boxShadow: [BoxShadow(color: const Color(0xFF8E24AA).withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))],
                   ),
@@ -328,8 +355,11 @@ class HomeContentState extends State<HomeContent> {
                 mainAxisSpacing: 15, crossAxisSpacing: 15, childAspectRatio: 1,
                 children: [
                   InkWell(onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => const MembersScreen())), borderRadius: BorderRadius.circular(15), child: _buildModuleIcon(Icons.people, "সদস্য", Colors.blue)),
+                  
+                  // সদস্য যোগ (শুধু অ্যাডমিন দেখবে)
                   if (userRole == 'Admin')
                     InkWell(onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => const AddMemberScreen())), borderRadius: BorderRadius.circular(15), child: _buildModuleIcon(Icons.person_add, "সদস্য যোগ", Colors.green)),
+                  
                   _buildModuleIcon(Icons.group, "কমিটি", Colors.orange),
                   _buildModuleIcon(Icons.assignment_ind, "দায়িত্ব", Colors.purple),
                   _buildModuleIcon(Icons.pie_chart, "শেয়ার", Colors.deepPurple),
@@ -348,7 +378,7 @@ class HomeContentState extends State<HomeContent> {
             ),
             const SizedBox(height: 30),
 
-            // 🔥 ৯. সাম্প্রতিক লেনদেন (SMS এর উপরে)
+            // ৯. সাম্প্রতিক লেনদেন
             const Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("সাম্প্রতিক লেনদেন", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey))),
             const SizedBox(height: 15),
             Padding(
@@ -380,6 +410,8 @@ class HomeContentState extends State<HomeContent> {
       ),
     );
   }
+
+  // ================= কাস্টম উইজেটস =================
 
   Widget _buildInfoCard(String title, String amount, IconData icon, Color color) {
     return Container(
