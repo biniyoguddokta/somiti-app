@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'login_screen.dart';
 import 'admin_manage_screen.dart';
+import 'video_tutorial_screen.dart'; // নতুন ইমপোর্ট
+import 'app_settings_screen.dart'; // নতুন ইমপোর্ট
 
 class MoreScreen extends StatefulWidget {
   const MoreScreen({super.key});
@@ -12,7 +14,7 @@ class MoreScreen extends StatefulWidget {
 
 class _MoreScreenState extends State<MoreScreen> {
   String name = "", role = "", phone = "";
-  bool isBengali = true; // ভাষা পরিবর্তনের জন্য
+  bool isBengali = true;
 
   @override
   void initState() { super.initState(); _loadData(); }
@@ -61,24 +63,26 @@ class _MoreScreenState extends State<MoreScreen> {
               ),
             ),
             
-            // সেটিংস মেনু
             _buildMenuTile(Icons.person_outline, "প্রোফাইল সম্পাদনা", () {}),
             
-            // উদ্যোক্তা সেটিংস (সমান সাইজ করা হলো)
+            // সেটিংস কার্ড
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
               child: Row(
                 children: [
                   Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.all(15),
-                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15)),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.settings, color: Colors.teal),
-                          SizedBox(width: 10),
-                          Expanded(child: Text("অ্যাপ সেটিংস", style: TextStyle(fontWeight: FontWeight.bold))),
-                        ],
+                    child: InkWell(
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => const AppSettingsScreen())),
+                      child: Container(
+                        padding: const EdgeInsets.all(15),
+                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15)),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.settings, color: Colors.teal),
+                            SizedBox(width: 10),
+                            Expanded(child: Text("অ্যাপ সেটিংস", style: TextStyle(fontWeight: FontWeight.bold))),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -100,15 +104,15 @@ class _MoreScreenState extends State<MoreScreen> {
               ),
             ),
 
-            // ভিডিও টিউটোরিয়াল
+            // ভিডিও টিউটোরিয়াল (লিংক করা হলো)
             ListTile(
               leading: const Icon(Icons.play_circle_fill, color: Colors.red),
-              title: const Text("ভিডিও টিউটোরিয়াল"),
+              title: const Text("ভিডিও টিউটোরিয়াল"),
               trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-              onTap: () {},
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => const VideoTutorialScreen())),
             ),
 
-            _buildMenuTile(Icons.help_outline, "সহায়তা ও যোগাযোগ", () {}),
+            _buildMenuTile(Icons.help_outline, "সহায়তা ও যোগাযোগ", () {}),
             _buildMenuTile(Icons.info_outline, "অ্যাপ সম্পর্কে", () {}), 
             
             // ভাষা পরিবর্তন
@@ -127,7 +131,6 @@ class _MoreScreenState extends State<MoreScreen> {
                       isSelected: [isBengali, !isBengali],
                       onPressed: (index) {
                         setState(() { isBengali = index == 0; });
-                        // এখানে ভাষা পরিবর্তনের লজিক বসবে
                       },
                       children: const [
                         Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("বাংলা")),
