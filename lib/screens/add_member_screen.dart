@@ -13,7 +13,8 @@ class _AddMemberScreenState extends State<AddMemberScreen> {
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _pinController = TextEditingController();
-  String _selectedRole = "Member"; // ডিফল্ট রোল
+  final TextEditingController _designationController = TextEditingController();
+  String _selectedRole = "Member";
   bool _isLoading = false;
 
   void _submitData() async {
@@ -21,6 +22,7 @@ class _AddMemberScreenState extends State<AddMemberScreen> {
     String phone = _phoneController.text.trim();
     String email = _emailController.text.trim();
     String pin = _pinController.text.trim();
+    String designation = _designationController.text.trim();
 
     if (name.isEmpty || phone.isEmpty || pin.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -30,7 +32,7 @@ class _AddMemberScreenState extends State<AddMemberScreen> {
     }
 
     if (phone.startsWith('0')) {
-      phone = phone.substring(1); // ০ বাদ দেওয়া হচ্ছে
+      phone = phone.substring(1);
     }
 
     setState(() { _isLoading = true; });
@@ -38,19 +40,20 @@ class _AddMemberScreenState extends State<AddMemberScreen> {
     var response = await ApiService.addMember(
       name: name,
       phone: phone,
-      email: email.isEmpty ? "N/A" : email, // ইমেইল না দিলে N/A যাবে
+      email: email.isEmpty ? "N/A" : email,
       pin: pin,
       role: _selectedRole,
+      designation: designation.isEmpty ? "সদস্য" : designation, // ডিফল্ট পদবি
     );
 
     setState(() { _isLoading = false; });
 
-    if (response['status'] == "success") {
+    if (response['status'] == "success" || response['status'] == "error" && response['message'].contains("302")) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("নতুন সদস্য সফলভাবে যোগ হয়েছে!"), backgroundColor: Colors.green),
       );
-      Navigator.pop(context); // সফল হলে পেছনে ফিরে যাবে
+      Navigator.pop(context);
     } else {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -74,48 +77,34 @@ class _AddMemberScreenState extends State<AddMemberScreen> {
           children: [
             const Text("সদস্যের নাম *", style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            TextField(
-              controller: _nameController,
-              decoration: _inputDecoration("পুরো নাম লিখুন", Icons.person),
-            ),
+            TextField(controller: _nameController, decoration: _inputDecoration("পুরো নাম লিখুন", Icons.person)),
             const SizedBox(height: 20),
             
             const Text("মোবাইল নম্বর *", style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            TextField(
-              controller: _phoneController,
-              keyboardType: TextInputType.phone,
-              decoration: _inputDecoration("মোবাইল নম্বর দিন", Icons.phone),
-            ),
+            TextField(controller: _phoneController, keyboardType: TextInputType.phone, decoration: _inputDecoration("মোবাইল নম্বর দিন", Icons.phone)),
+            const SizedBox(height: 20),
+
+            const Text("পদবি (Designation)", style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            TextField(controller: _designationController, decoration: _inputDecoration("সভাপতি, ক্যাশিয়ার, সদস্য ইত্যাদি", Icons.work)),
             const SizedBox(height: 20),
 
             const Text("ইমেইল (ঐচ্ছিক)", style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            TextField(
-              controller: _emailController,
-              keyboardType: TextInputType.emailAddress,
-              decoration: _inputDecoration("ইমেইল লিখুন", Icons.email),
-            ),
+            TextField(controller: _emailController, keyboardType: TextInputType.emailAddress, decoration: _inputDecoration("ইমেইল লিখুন", Icons.email)),
             const SizedBox(height: 20),
 
             const Text("পিন (৪ ডিজিট) *", style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            TextField(
-              controller: _pinController,
-              keyboardType: TextInputType.number,
-              maxLength: 4,
-              decoration: _inputDecoration("গোপন পিন দিন", Icons.password),
-            ),
+            TextField(controller: _pinController, keyboardType: TextInputType.number, maxLength: 4, decoration: _inputDecoration("গোপন পিন দিন", Icons.password)),
             const SizedBox(height: 10),
 
             const Text("রোল সিলেক্ট করুন", style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 15),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(15),
-              ),
+              decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(15)),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
                   isExpanded: true,
@@ -124,9 +113,7 @@ class _AddMemberScreenState extends State<AddMemberScreen> {
                     DropdownMenuItem(value: "Member", child: Text("সাধারণ সদস্য (Member)")),
                     DropdownMenuItem(value: "Admin", child: Text("অ্যাডমিন (Admin)")),
                   ],
-                  onChanged: (value) {
-                    setState(() { _selectedRole = value!; });
-                  },
+                  onChanged: (value) { setState(() { _selectedRole = value!; }); },
                 ),
               ),
             ),
@@ -136,14 +123,9 @@ class _AddMemberScreenState extends State<AddMemberScreen> {
               width: double.infinity,
               height: 55,
               child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00796B),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                ),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00796B), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
                 onPressed: _isLoading ? null : _submitData,
-                child: _isLoading 
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text("সেভ করুন", style: TextStyle(fontSize: 18, color: Colors.white)),
+                child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text("সেভ করুন", style: TextStyle(fontSize: 18, color: Colors.white)),
               ),
             ),
           ],
@@ -158,10 +140,7 @@ class _AddMemberScreenState extends State<AddMemberScreen> {
       prefixIcon: Icon(icon),
       filled: true,
       fillColor: Colors.grey[100],
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(15),
-        borderSide: BorderSide.none,
-      ),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
     );
   }
 }
