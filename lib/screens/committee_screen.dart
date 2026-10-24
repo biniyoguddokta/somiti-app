@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 
 class CommitteeScreen extends StatefulWidget {
-  final String userRole;
-  const CommitteeScreen({super.key, required this.userRole});
+  final String userRole; // 🔥 এই লাইনটি নিশ্চিত করুন
+  const CommitteeScreen({super.key, required this.userRole}); // 🔥 required this.userRole নিশ্চিত করুন
 
   @override
   State<CommitteeScreen> createState() => _CommitteeScreenState();
