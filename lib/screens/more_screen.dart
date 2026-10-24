@@ -11,7 +11,8 @@ class MoreScreen extends StatefulWidget {
 }
 
 class _MoreScreenState extends State<MoreScreen> {
-  String name = "", role = "", phone = "", email = "";
+  String name = "", role = "", phone = "";
+  bool isBengali = true; // ভাষা পরিবর্তনের জন্য
 
   @override
   void initState() { super.initState(); _loadData(); }
@@ -22,7 +23,6 @@ class _MoreScreenState extends State<MoreScreen> {
       name = prefs.getString('userName') ?? "User";
       role = prefs.getString('userRole') ?? "Member";
       phone = prefs.getString('userPhone') ?? "";
-      email = prefs.getString('userEmail') ?? "user@gmail.com"; 
     });
   }
 
@@ -37,24 +37,17 @@ class _MoreScreenState extends State<MoreScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
-      appBar: AppBar(title: const Text("প্রোফাইল"), backgroundColor: const Color(0xFF00796B), foregroundColor: Colors.white),
+      appBar: AppBar(title: const Text("আরও"), backgroundColor: const Color(0xFF00796B), foregroundColor: Colors.white),
       body: SingleChildScrollView(
         child: Column(
           children: [
             // প্রোফাইল হেডার
             Container(
               padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                border: Border(bottom: BorderSide(color: Colors.black12)),
-              ),
+              decoration: const BoxDecoration(color: Colors.white),
               child: Row(
                 children: [
-                  const CircleAvatar(
-                    radius: 35,
-                    backgroundColor: Color(0xFF00796B),
-                    child: Icon(Icons.person, size: 40, color: Colors.white),
-                  ),
+                  const CircleAvatar(radius: 35, backgroundColor: Color(0xFF00796B), child: Icon(Icons.person, size: 40, color: Colors.white)),
                   const SizedBox(width: 20),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -68,22 +61,84 @@ class _MoreScreenState extends State<MoreScreen> {
               ),
             ),
             
-            // মেনু লিস্ট
+            // সেটিংস মেনু
             _buildMenuTile(Icons.person_outline, "প্রোফাইল সম্পাদনা", () {}),
-            _buildMenuTile(Icons.notifications_none, "নোটিফিকেশন সেটিংস", () {}),
-            _buildMenuTile(Icons.security, "সুরক্ষা ও গোপনীয়তা", () {}),
             
-            if (role == "Admin") ...[
-              const Divider(),
-              _buildMenuTile(Icons.admin_panel_settings, "সদস্য ম্যানেজমেন্ট (রোল)", () {
-                Navigator.push(context, MaterialPageRoute(builder: (c) => const AdminManageScreen()));
-              }),
-              const Divider(),
-            ],
+            // উদ্যোক্তা সেটিংস (সমান সাইজ করা হলো)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.all(15),
+                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15)),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.settings, color: Colors.teal),
+                          SizedBox(width: 10),
+                          Expanded(child: Text("অ্যাপ সেটিংস", style: TextStyle(fontWeight: FontWeight.bold))),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.all(15),
+                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15)),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.settings_suggest, color: Colors.green),
+                          SizedBox(width: 10),
+                          Expanded(child: Text("উদ্যোক্তা সেটিংস", style: TextStyle(fontWeight: FontWeight.bold))),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
-            _buildMenuTile(Icons.help_outline, "সহায়তা ও যোগাযোগ", () {}), 
+            // ভিডিও টিউটোরিয়াল
+            ListTile(
+              leading: const Icon(Icons.play_circle_fill, color: Colors.red),
+              title: const Text("ভিডিও টিউটোরিয়াল"),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+              onTap: () {},
+            ),
+
+            _buildMenuTile(Icons.help_outline, "সহায়তা ও যোগাযোগ", () {}),
             _buildMenuTile(Icons.info_outline, "অ্যাপ সম্পর্কে", () {}), 
             
+            // ভাষা পরিবর্তন
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+              child: Container(
+                padding: const EdgeInsets.all(15),
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15)),
+                child: Row(
+                  children: [
+                    const Icon(Icons.translate, color: Color(0xFF00796B)),
+                    const SizedBox(width: 15),
+                    const Expanded(child: Text("অ্যাপের ভাষা", style: TextStyle(fontWeight: FontWeight.bold))),
+                    ToggleButtons(
+                      borderRadius: BorderRadius.circular(20),
+                      isSelected: [isBengali, !isBengali],
+                      onPressed: (index) {
+                        setState(() { isBengali = index == 0; });
+                        // এখানে ভাষা পরিবর্তনের লজিক বসবে
+                      },
+                      children: const [
+                        Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("বাংলা")),
+                        Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("English")),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
             const SizedBox(height: 20),
             
             ListTile(
