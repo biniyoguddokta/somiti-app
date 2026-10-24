@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  static const String baseUrl = 'YOUR_APPS_SCRIPT_URL_HERE'; // 🔥 আপনার URL দিন
+  static const String baseUrl = 'https://script.google.com/macros/s/AKfycby8WDNL-Mvy34P04vw_zbkexLjE8OjqDIXVlP7HYS6Bq6R_v8SEqhLPx3sL0Q89YdvetQ/exec'; // 🔥 আপনার URL দিন
 
   static Future<dynamic> _getData(String action) async {
     try {
