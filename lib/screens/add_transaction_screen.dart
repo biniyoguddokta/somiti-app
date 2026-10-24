@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 
 class AddTransactionScreen extends StatefulWidget {
-  final String type; // 'জমা', 'খরচ', 'আয়', 'বিনিয়োগ'
+  final String type; // 'জমা', 'খরচ', 'আয়', 'বিনিয়োগ', 'বকেয়া'
   const AddTransactionScreen({super.key, required this.type});
 
   @override
@@ -14,6 +14,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
   bool _isLoading = false;
+  String _status = "Paid"; // ডিফল্ট স্ট্যাটাস
 
   void _submit() async {
     String amount = _amountController.text.trim();
@@ -28,11 +29,16 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     String userName = prefs.getString('userName') ?? "Unknown";
 
     var response = await ApiService.addTransaction(
-      type: widget.type, amount: amount, note: note, memberName: userName,
+      type: widget.type, 
+      amount: amount, 
+      note: note, 
+      memberName: userName,
+      status: _status, // নতুন স্ট্যাটাস প্যারামিটার
     );
+    
     setState(() => _isLoading = false);
 
-    if (response['status'] == "success") {
+    if (response['status'] == "success" || response['status'] == "error" && response['message'].contains("302")) {
       if (!mounted) return;
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("সফলভাবে সেভ হয়েছে!"), backgroundColor: Colors.green));
@@ -60,6 +66,28 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               controller: _noteController,
               decoration: InputDecoration(labelText: "বিবরণ / নোট (ঐচ্ছিক)", prefixIcon: const Icon(Icons.note), border: OutlineInputBorder(borderRadius: BorderRadius.circular(15))),
             ),
+            const SizedBox(height: 20),
+            
+            // বকেয়া বা জমার ক্ষেত্রে পেমেন্ট স্ট্যাটাস অপশন
+            if (widget.type == "জমা" || widget.type == "বকেয়া") ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 15),
+                decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(15)),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    isExpanded: true,
+                    value: _status,
+                    items: const [
+                      DropdownMenuItem(value: "Paid", child: Text("পরিশোধিত (Paid)")),
+                      DropdownMenuItem(value: "Unpaid", child: Text("বাকি (Unpaid)")),
+                    ],
+                    onChanged: (val) => setState(() => _status = val!),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+
             const SizedBox(height: 30),
             SizedBox(
               width: double.infinity, height: 50,
