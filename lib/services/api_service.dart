@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  static const String baseUrl = 'https://script.google.com/macros/s/AKfycby8WDNL-Mvy34P04vw_zbkexLjE8OjqDIXVlP7HYS6Bq6R_v8SEqhLPx3sL0Q89YdvetQ/exec'; // 🔥 আপনার URL দিন
+  static const String baseUrl = 'YOUR_APPS_SCRIPT_URL_HERE'; // 🔥 আপনার URL দিন
 
   static Future<dynamic> _getData(String action) async {
     try {
@@ -35,6 +35,9 @@ class ApiService {
   static Future<dynamic> getAllMembers() => _getData("getAllMembers");
   static Future<Map<String, dynamic>> addMember({required String name, required String phone, required String email, required String pin, required String role, required String designation}) 
     => _postData("addMember", {"name": name, "phone": phone, "email": email, "pin": pin, "role": role, "designation": designation});
+
+  static Future<Map<String, dynamic>> updateRole({required String phone, required String newRole}) 
+    => _postData("updateRole", {"phone": phone, "newRole": newRole});
 
   // Transactions (জমা, খরচ, বকেয়া)
   static Future<dynamic> getTransactions() => _getData("getTransactions");
