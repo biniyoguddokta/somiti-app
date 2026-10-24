@@ -18,22 +18,28 @@ class _AdminManageScreenState extends State<AdminManageScreen> {
   void _loadMembers() async {
     setState(() => isLoading = true);
     var res = await ApiService.getAllMembers();
-    if (res is List) { setState(() { members = res; isLoading = false; }); } 
-    else { setState(() => isLoading = false); }
+    if (res is List) { 
+      setState(() { members = res; isLoading = false; }); 
+    } else { 
+      setState(() => isLoading = false); 
+    }
   }
 
   void _changeRole(String phone, String currentRole) async {
     String newRole = currentRole == "Admin" ? "Member" : "Admin";
     setState(() => isLoading = true);
+    
+    // এখানে updateRole কল করা হয়েছে
     var res = await ApiService.updateRole(phone: phone, newRole: newRole);
-    if (res['status'] == "success") {
+    
+    if (res['status'] == "success" || res['status'] == "error" && res['message'].contains("302")) {
       _loadMembers();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("রোল আপডেট হয়েছে!"), backgroundColor: Colors.green));
     } else {
       setState(() => isLoading = false);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res['message']), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res['message'] ?? "সমস্যা"), backgroundColor: Colors.red));
     }
   }
 
@@ -47,8 +53,8 @@ class _AdminManageScreenState extends State<AdminManageScreen> {
           var m = members[index];
           bool isAdmin = m['Role'] == 'Admin';
           return ListTile(
-            leading: CircleAvatar(backgroundColor: isAdmin ? Colors.green : Colors.blue, child: Text(m['Name'][0])),
-            title: Text(m['Name']),
+            leading: CircleAvatar(backgroundColor: isAdmin ? Colors.green : Colors.blue, child: Text(m['Name'].toString().substring(0,1))),
+            title: Text(m['Name'].toString()),
             subtitle: Text(m['Phone'].toString()),
             trailing: ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: isAdmin ? Colors.red : Colors.green),
