@@ -4,93 +4,62 @@ import 'package:http/http.dart' as http;
 class ApiService {
   static const String baseUrl = 'https://script.google.com/macros/s/AKfycby8WDNL-Mvy34P04vw_zbkexLjE8OjqDIXVlP7HYS6Bq6R_v8SEqhLPx3sL0Q89YdvetQ/exec'; // 🔥 আপনার URL দিন
 
-  static Future<dynamic> getAllMembers() async {
+  static Future<dynamic> _getData(String action) async {
     try {
-      final res = await http.get(Uri.parse('$baseUrl?action=getAllMembers'));
+      final res = await http.get(Uri.parse('$baseUrl?action=$action'));
       if (res.statusCode == 200) {
-        if (res.body.contains("<!DOCTYPE html>")) return {"error": "API লিংক ভুল বা পারমিশন নেই"};
+        if (res.body.contains("<!DOCTYPE html>")) return {"error": "API Permission Issue"};
         return jsonDecode(res.body);
       }
-      return {"error": "সার্ভার এরর: ${res.statusCode}"};
-    } catch (e) { return {"error": "ইন্টারনেট সমস্যা: $e"}; }
+      return {"error": "Server Error: ${res.statusCode}"};
+    } catch (e) { return {"error": "Internet Issue: $e"}; }
   }
 
-  static Future<dynamic> getTransactions() async {
-    try {
-      final res = await http.get(Uri.parse('$baseUrl?action=getTransactions'));
-      if (res.statusCode == 200) {
-        if (res.body.contains("<!DOCTYPE html>")) return {"error": "API লিংক ভুল বা পারমিশন নেই"};
-        return jsonDecode(res.body);
-      }
-      return {"error": "সার্ভার এরর: ${res.statusCode}"};
-    } catch (e) { return {"error": "ইন্টারনেট সমস্যা: $e"}; }
-  }
-
-  static Future<Map<String, dynamic>> addMember({required String name, required String phone, required String email, required String pin, required String role}) async {
+  static Future<Map<String, dynamic>> _postData(String action, Map<String, dynamic> body) async {
     try {
       final res = await http.post(
-        Uri.parse('$baseUrl?action=addMember'),
+        Uri.parse('$baseUrl?action=$action'),
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"name": name, "phone": phone, "email": email, "pin": pin, "role": role}),
+        body: jsonEncode(body),
       );
-      
-      // 🔥 এখানে 302 চেক করা হয়েছে
       if (res.statusCode == 200 || res.statusCode == 302) {
-        // যদি HTML পেজ আসে (অনুমতি না থাকলে)
-        if (res.body.contains("<!DOCTYPE html>")) {
-          return {"status": "error", "message": "গুগল পারমিশন চাচ্ছে। Apps Script চেক করুন।"};
-        }
-        // যদি 302 আসে, তবে ডেটা আগেই সেভ হয়ে গেছে
-        if (res.statusCode == 302) {
-            return {"status": "success", "message": "সদস্য যোগ হয়েছে (302)"};
-        }
+        if (res.body.contains("<!DOCTYPE html>")) return {"status": "error", "message": "Permission Issue"};
+        if (res.statusCode == 302) return {"status": "success", "message": "Success (302)"};
         return jsonDecode(res.body);
       }
-      return {"status": "error", "message": "সার্ভার এরর: ${res.statusCode}"};
-    } catch (e) { return {"status": "error", "message": "ইন্টারনেট সমস্যা: $e"}; }
+      return {"status": "error", "message": "Server Error: ${res.statusCode}"};
+    } catch (e) { return {"status": "error", "message": "Internet Issue: $e"}; }
   }
 
-  static Future<Map<String, dynamic>> addTransaction({required String type, required String amount, required String note, required String memberName}) async {
-    try {
-      final res = await http.post(
-        Uri.parse('$baseUrl?action=addTransaction'),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"type": type, "amount": amount, "note": note, "memberName": memberName}),
-      );
-      
-      // 🔥 এখানে 302 চেক করা হয়েছে
-      if (res.statusCode == 200 || res.statusCode == 302) {
-        if (res.body.contains("<!DOCTYPE html>")) {
-          return {"status": "error", "message": "গুগল পারমিশন চাচ্ছে।"};
-        }
-        if (res.statusCode == 302) {
-            return {"status": "success", "message": "লেনদেন সেভ হয়েছে (302)"};
-        }
-        return jsonDecode(res.body);
-      }
-      return {"status": "error", "message": "সার্ভার এরর: ${res.statusCode}"};
-    } catch (e) { return {"status": "error", "message": "ইন্টারনেট সমস্যা: $e"}; }
-  }
+  // Members
+  static Future<dynamic> getAllMembers() => _getData("getAllMembers");
+  static Future<Map<String, dynamic>> addMember({required String name, required String phone, required String email, required String pin, required String role, required String designation}) 
+    => _postData("addMember", {"name": name, "phone": phone, "email": email, "pin": pin, "role": role, "designation": designation});
 
-  static Future<Map<String, dynamic>> updateRole({required String phone, required String newRole}) async {
-    try {
-      final res = await http.post(
-        Uri.parse('$baseUrl?action=updateRole'),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"phone": phone, "newRole": newRole}),
-      );
-      
-      // 🔥 এখানে 302 চেক করা হয়েছে
-      if (res.statusCode == 200 || res.statusCode == 302) {
-        if (res.body.contains("<!DOCTYPE html>")) {
-          return {"status": "error", "message": "গুগল পারমিশন চাচ্ছে।"};
-        }
-        if (res.statusCode == 302) {
-            return {"status": "success", "message": "রোল আপডেট হয়েছে (302)"};
-        }
-        return jsonDecode(res.body);
-      }
-      return {"status": "error", "message": "সার্ভার এরর: ${res.statusCode}"};
-    } catch (e) { return {"status": "error", "message": "ইন্টারনেট সমস্যা: $e"}; }
-  }
+  // Transactions (জমা, খরচ, বকেয়া)
+  static Future<dynamic> getTransactions() => _getData("getTransactions");
+  static Future<Map<String, dynamic>> addTransaction({required String type, required String amount, required String note, required String memberName, required String status}) 
+    => _postData("addTransaction", {"type": type, "amount": amount, "note": note, "memberName": memberName, "status": status});
+  
+  // Update Transaction Status (For Due payment)
+  static Future<Map<String, dynamic>> updateTransactionStatus({required String rowIndex, required String status})
+    => _postData("updateTransactionStatus", {"rowIndex": rowIndex, "status": status});
+
+  // Investments (বিনিয়োগ)
+  static Future<dynamic> getInvestments() => _getData("getInvestments");
+  static Future<Map<String, dynamic>> addInvestment({required String sector, required String projectName, required String investAmount, required String startDate, required String endDate, required String profitAmount}) 
+    => _postData("addInvestment", {"sector": sector, "projectName": projectName, "investAmount": investAmount, "startDate": startDate, "endDate": endDate, "profitAmount": profitAmount});
+
+  // Constitution (গঠনতন্ত্র)
+  static Future<dynamic> getConstitution() => _getData("getConstitution");
+  static Future<Map<String, dynamic>> addConstitution({required String title, required String content}) 
+    => _postData("addConstitution", {"title": title, "content": content});
+
+  // Videos
+  static Future<dynamic> getVideos() => _getData("getVideos");
+
+  // Settings (App settings, About App, etc.)
+  static Future<dynamic> getSettings() => _getData("getSettings");
+  static Future<Map<String, dynamic>> updateSetting({required String key, required String value}) 
+    => _postData("updateSetting", {"key": key, "value": value});
 }
