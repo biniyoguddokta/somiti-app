@@ -15,9 +15,9 @@ import 'late_fee_screen.dart';
 import 'meeting_screen.dart';
 import 'due_list_screen.dart'; 
 import 'report_screen.dart'; 
-import 'transaction_list_screen.dart'; // লিস্ট পেজ
-import 'investment_screen.dart'; // নতুন ইমপোর্ট
-import 'committee_screen.dart'; // নতুন ইমপোর্ট
+import 'transaction_list_screen.dart';
+import 'investment_screen.dart';
+import 'committee_screen.dart'; 
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -308,7 +308,6 @@ class HomeContentState extends State<HomeContent> {
             ),
             const SizedBox(height: 20),
             
-            // ৪টি অ্যাকশন বাটন
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15),
               child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
@@ -332,7 +331,6 @@ class HomeContentState extends State<HomeContent> {
                   if (userRole == 'Admin')
                     InkWell(onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => const AddMemberScreen())), borderRadius: BorderRadius.circular(15), child: _buildModuleIcon(Icons.person_add, "সদস্য যোগ", Colors.green)),
                   
-                  // কমিটি পেজ লিংক করা হলো
                   InkWell(onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => CommitteeScreen(userRole: userRole))), borderRadius: BorderRadius.circular(15), child: _buildModuleIcon(Icons.group, "কমিটি", Colors.orange)),
                   
                   _buildModuleIcon(Icons.assignment_ind, "দায়িত্ব", Colors.purple),
@@ -402,11 +400,9 @@ class HomeContentState extends State<HomeContent> {
     return Expanded(
       child: InkWell(
         onTap: () async {
-          // 🔥 বিনিয়োগ বাটনে ক্লিক করলে সরাসরি বিনিয়োগ পেজে যাবে
           if (type == "বিনিয়োগ") {
              await Navigator.push(context, MaterialPageRoute(builder: (c) => InvestmentScreen(userRole: userRole)));
           } else {
-             // জমা, খরচ, আয় এর জন্য লিস্ট পেজে যাবে
              await Navigator.push(context, MaterialPageRoute(builder: (c) => TransactionListScreen(type: type)));
           }
           fetchDashboardData(); 
