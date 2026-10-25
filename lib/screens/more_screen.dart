@@ -4,7 +4,6 @@ import '../services/api_service.dart';
 import '../main.dart'; // themeNotifier এর জন্য
 import 'login_screen.dart';
 import 'app_settings_screen.dart';
-import 'video_tutorial_screen.dart';
 
 class MoreScreen extends StatefulWidget {
   const MoreScreen({super.key});
@@ -17,9 +16,7 @@ class _MoreScreenState extends State<MoreScreen> {
   String name = "", role = "", phone = "";
   bool isLoadingStats = true;
 
-  // স্ট্যাটস ভ্যারিয়েবল
   double totalDeposit = 0.0;
-  double totalInvestment = 0.0;
   double totalProfit = 0.0;
   int activeProjects = 0;
 
@@ -41,7 +38,6 @@ class _MoreScreenState extends State<MoreScreen> {
   }
 
   void _fetchStats() async {
-    // ১. জমা বের করা
     var txRes = await ApiService.getTransactions();
     if (txRes is List) {
       double tempDeposit = 0.0;
@@ -52,25 +48,17 @@ class _MoreScreenState extends State<MoreScreen> {
       setState(() => totalDeposit = tempDeposit);
     }
 
-    // ২. বিনিয়োগ ও লাভ বের করা
     var invRes = await ApiService.getInvestments();
     if (invRes is List) {
       double tempProfit = 0.0;
-      double tempInv = 0.0;
       int tempActive = 0;
       for (var inv in invRes) {
         double profit = double.tryParse(inv['ProfitAmount'].toString()) ?? 0.0;
-        double amount = double.tryParse(inv['InvestAmount'].toString()) ?? 0.0;
-        
         tempProfit += profit;
-        if (inv['Status'] == 'সক্রিয়') {
-          tempActive++;
-          tempInv += amount; // সক্রিয় বিনিয়োগের টাকা যোগ
-        }
+        if (inv['Status'] == 'সক্রিয়') tempActive++;
       }
       setState(() {
         totalProfit = tempProfit;
-        totalInvestment = tempInv;
         activeProjects = tempActive;
         isLoadingStats = false;
       });
@@ -130,7 +118,6 @@ class _MoreScreenState extends State<MoreScreen> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // ১. সবুজ হেডার (৩ নং স্ক্রিনশট)
             Container(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
               decoration: const BoxDecoration(
@@ -146,14 +133,14 @@ class _MoreScreenState extends State<MoreScreen> {
                     children: [
                       Text(name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
                       const SizedBox(height: 5),
-                      Text(role == 'Admin' ? "প্রতিষ্ঠাতা / অ্যাডমিন" : "সাধারণ সদস্য", style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                      // 🔥 শুধু "অ্যাডমিন" করা হলো
+                      Text(role == 'Admin' ? "অ্যাডমিন" : "সাধারণ সদস্য", style: const TextStyle(color: Colors.white70, fontSize: 14)),
                     ],
                   )
                 ],
               ),
             ),
 
-            // ২. স্ট্যাটস কার্ড (মোট বিনিয়োগ, লাভ ইত্যাদি)
             Transform.translate(
               offset: const Offset(0, -20),
               child: Padding(
@@ -172,13 +159,11 @@ class _MoreScreenState extends State<MoreScreen> {
               ),
             ),
 
-            // ৩. মেনু অপশন
             _buildMenuTile(Icons.notifications_none, "নোটিফিকেশন সেটিংস", () {
               Navigator.push(context, MaterialPageRoute(builder: (c) => const AppSettingsScreen()));
             }),
             _buildMenuTile(Icons.security, "সুরক্ষা ও গোপনীয়তা (পিন)", _showPinChangeDialog),
             
-            // 🔥 ডার্ক মোড অপশন (ভিডিওর জায়গায় বসানো হলো)
             SwitchListTile(
               secondary: const Icon(Icons.dark_mode, color: Colors.blueGrey),
               title: const Text("ডার্ক মোড", style: TextStyle(fontWeight: FontWeight.w500)),
@@ -191,9 +176,8 @@ class _MoreScreenState extends State<MoreScreen> {
               },
             ),
 
-            _buildMenuTile(Icons.play_circle_fill, "ভিডিও টিউটোরিয়াল", () {
-              Navigator.push(context, MaterialPageRoute(builder: (c) => const VideoTutorialScreen()));
-            }),
+            // 🔥 ভিডিও টিউটোরিয়াল বাদ দেওয়া হলো
+
             _buildMenuTile(Icons.info_outline, "অ্যাপ সম্পর্কে", () {
               showAboutDialog(
                 context: context,
