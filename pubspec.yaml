@@ -14,7 +14,8 @@ dependencies:
   carousel_slider: ^5.0.0
   shared_preferences: 2.2.2 
   intl: ^0.18.1
-  fl_chart: ^0.65.0 # চার্ট ও রিপোর্টের জন্য নতুন যোগ করা হলো
+  fl_chart: ^0.65.0
+  marquee: ^2.2.3 # নোটিশ স্ক্রল করার জন্য
 
 dev_dependencies:
   flutter_test:
@@ -23,5 +24,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  # assets:
-  #   - assets/
+  assets:
+    - assets/ # 🔥 আপনার ব্যানারগুলোর জন্য চালু করা হলো
