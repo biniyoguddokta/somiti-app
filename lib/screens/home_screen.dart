@@ -39,7 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
       const MembersScreen(),
       const CollectionScreen(),
       const ReportScreen(), 
-      const MoreScreen(), // 🔥 এখন 'আরও' ট্যাবে প্রোফাইল দেখাবে
+      const MoreScreen(), 
     ];
 
     return Scaffold(
@@ -112,8 +112,13 @@ class HomeContentState extends State<HomeContent> {
   String userRole = "Member";
   bool _isLoadingStats = true;
   
+  // মোট সম্পদ
   bool _isBalanceVisible = false;
   double totalAssets = 0.0;
+  Timer? _balanceTimer; // ৩ সেকেন্ড পর হাইড করার জন্য
+
+  // ভাষা পরিবর্তন
+  bool isBengali = true;
 
   double cashInHand = 0.0;
   double todayDeposit = 0.0;
@@ -135,11 +140,26 @@ class HomeContentState extends State<HomeContent> {
     fetchDashboardData(); 
   }
 
+  @override
+  void dispose() {
+    _balanceTimer?.cancel(); // মেমোরি লিক রোধে
+    super.dispose();
+  }
+
   void _loadUser() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
       userName = prefs.getString('userName') ?? "User";
       userRole = prefs.getString('userRole') ?? "Member";
+    });
+  }
+
+  // ৩ সেকেন্ড পর ব্যালেন্স হাইড করার ফাংশন
+  void _toggleBalance() {
+    setState(() => _isBalanceVisible = true);
+    _balanceTimer?.cancel();
+    _balanceTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) setState(() => _isBalanceVisible = false);
     });
   }
 
@@ -217,7 +237,7 @@ class HomeContentState extends State<HomeContent> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ১. টপ বার (মেনু, মোট সম্পদ, প্রোফাইল)
+            // ১. টপ বার
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
               child: Row(
@@ -230,24 +250,25 @@ class HomeContentState extends State<HomeContent> {
                     ),
                   ),
                   
-                  // 🔥 মোট সম্পদ ফিক্স
+                  // 🔥 মোট সম্পদ (৩ সেকেন্ড টাইমারসহ)
                   GestureDetector(
-                    onTap: () => setState(() => _isBalanceVisible = !_isBalanceVisible),
+                    onTap: _toggleBalance,
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 300),
-                      padding: const EdgeInsets.symmetric(horizontal: 35, vertical: 10), // সাইজ বাড়ানো হলো
+                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12), // সাইজ আরও বড় করা হলো
                       decoration: BoxDecoration(
-                        color: _isBalanceVisible ? Colors.white : Colors.grey.shade200, // ক্লিক করলে সাদা হবে
+                        color: _isBalanceVisible ? Colors.white : Colors.grey.shade200, 
                         borderRadius: BorderRadius.circular(25),
-                        boxShadow: _isBalanceVisible ? [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 5)] : [],
+                        boxShadow: _isBalanceVisible ? [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 8)] : [],
+                        border: Border.all(color: Colors.grey.shade300)
                       ),
                       child: Column(
                         children: [
-                          Text("মোট সম্পদ", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: _isBalanceVisible ? const Color(0xFF00796B) : Colors.grey)),
+                          Text("মোট সম্পদ", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: _isBalanceVisible ? const Color(0xFF00796B) : Colors.black54)),
                           if (_isBalanceVisible) ...[
-                            const SizedBox(height: 2),
-                            // টেক্সট কালো হবে
-                            Text("৳ ${totalAssets.toStringAsFixed(0)}", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black)),
+                            const SizedBox(height: 4),
+                            // টেক্সট কালো হবে এবং স্পষ্ট হবে
+                            Text("৳ ${totalAssets.toStringAsFixed(0)}", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
                           ]
                         ],
                       ),
@@ -264,9 +285,9 @@ class HomeContentState extends State<HomeContent> {
               ),
             ),
             
-            // ২. স্লাইডিং ব্যানার (ডান পাশের ফাঁকা জায়গা ফিক্স)
+            // ২. স্লাইডিং ব্যানার (বড় এবং মাঝ বরাবর)
             SizedBox(
-              height: 160,
+              height: 180, // উচ্চতা বাড়ানো হলো
               child: CarouselSlider(
                 carouselController: _carouselController,
                 options: CarouselOptions(
@@ -274,7 +295,7 @@ class HomeContentState extends State<HomeContent> {
                   autoPlayInterval: const Duration(seconds: 3), 
                   enlargeCenterPage: true, 
                   viewportFraction: 0.95, // স্ক্রিনের ৯৫% জুড়ে থাকবে
-                  padEnds: false, // বাাম দিক থেকে শুরু হবে, ডান পাশে ফাঁকা থাকবে না
+                  padEnds: true, // মাঝ বরাবর থাকবে
                   onPageChanged: (index, reason) => setState(() => _currentBanner = index),
                 ),
                 items: banners.map((bannerUrl) => Builder(
@@ -286,7 +307,7 @@ class HomeContentState extends State<HomeContent> {
                       borderRadius: BorderRadius.circular(15), 
                       child: Image.asset(
                         bannerUrl, 
-                        fit: BoxFit.cover, // পুরো জায়গা ঢেকে দেবে
+                        fit: BoxFit.cover, // ছবি পুরো জায়গা ঢেকে দেবে
                         errorBuilder: (c, e, s) => Container(color: Colors.grey.shade300, child: const Center(child: Icon(Icons.image)))
                       )
                     ),
@@ -296,7 +317,7 @@ class HomeContentState extends State<HomeContent> {
             ),
             const SizedBox(height: 10),
             
-            // ৩. নোটিশ স্ক্রল
+            // ৩. নোটিশ
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
               padding: const EdgeInsets.symmetric(vertical: 8),
@@ -450,7 +471,7 @@ class HomeContentState extends State<HomeContent> {
             ),
             const SizedBox(height: 30),
 
-            // ================= 🔥 ফিরিয়ে আনা হলো: SMS, চার্ট ও সেটিংস =================
+            // ================= SMS, চার্ট ও সেটিংস =================
             const Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("SMS", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey))),
             const SizedBox(height: 15),
             Padding(
@@ -506,6 +527,34 @@ class HomeContentState extends State<HomeContent> {
                 const SizedBox(width: 15),
                 Expanded(child: _buildSettingsCard(Icons.menu_book, "নির্দেশিকা", "প্রতিটি পাতার ম্যানুয়াল", Colors.orange, isDark)),
               ]),
+            ),
+            const SizedBox(height: 30),
+
+            // 🔥 ১০. ভাষা পরিবর্তন (সবার শেষে ফিরিয়ে আনা হলো)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+              child: Container(
+                padding: const EdgeInsets.all(15),
+                decoration: BoxDecoration(color: isDark ? Colors.grey[800] : Colors.white, borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.grey.shade200)),
+                child: Row(
+                  children: [
+                    const Icon(Icons.translate, color: Color(0xFF00796B)),
+                    const SizedBox(width: 15),
+                    const Expanded(child: Text("অ্যাপের ভাষা", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
+                    ToggleButtons(
+                      borderRadius: BorderRadius.circular(20),
+                      isSelected: [isBengali, !isBengali],
+                      onPressed: (index) {
+                        setState(() { isBengali = index == 0; });
+                      },
+                      children: const [
+                        Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("বাংলা")),
+                        Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("English")),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 30),
           ],
