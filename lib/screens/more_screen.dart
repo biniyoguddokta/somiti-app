@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
+import '../main.dart'; // themeNotifier এর জন্য
 import 'login_screen.dart';
 import 'app_settings_screen.dart';
 import 'video_tutorial_screen.dart';
@@ -18,6 +19,7 @@ class _MoreScreenState extends State<MoreScreen> {
 
   // স্ট্যাটস ভ্যারিয়েবল
   double totalDeposit = 0.0;
+  double totalInvestment = 0.0;
   double totalProfit = 0.0;
   int activeProjects = 0;
 
@@ -39,7 +41,7 @@ class _MoreScreenState extends State<MoreScreen> {
   }
 
   void _fetchStats() async {
-    // ১. লেনদেন থেকে জমা ও লাভ বের করা
+    // ১. জমা বের করা
     var txRes = await ApiService.getTransactions();
     if (txRes is List) {
       double tempDeposit = 0.0;
@@ -50,18 +52,25 @@ class _MoreScreenState extends State<MoreScreen> {
       setState(() => totalDeposit = tempDeposit);
     }
 
-    // ২. বিনিয়োগ থেকে লাভ ও সক্রিয় প্রকল্প বের করা
+    // ২. বিনিয়োগ ও লাভ বের করা
     var invRes = await ApiService.getInvestments();
     if (invRes is List) {
       double tempProfit = 0.0;
+      double tempInv = 0.0;
       int tempActive = 0;
       for (var inv in invRes) {
         double profit = double.tryParse(inv['ProfitAmount'].toString()) ?? 0.0;
+        double amount = double.tryParse(inv['InvestAmount'].toString()) ?? 0.0;
+        
         tempProfit += profit;
-        if (inv['Status'] == 'সক্রিয়') tempActive++;
+        if (inv['Status'] == 'সক্রিয়') {
+          tempActive++;
+          tempInv += amount; // সক্রিয় বিনিয়োগের টাকা যোগ
+        }
       }
       setState(() {
         totalProfit = tempProfit;
+        totalInvestment = tempInv;
         activeProjects = tempActive;
         isLoadingStats = false;
       });
@@ -77,7 +86,6 @@ class _MoreScreenState extends State<MoreScreen> {
     Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const LoginScreen()), (route) => false);
   }
 
-  // পিন পরিবর্তনের ডায়ালগ
   void _showPinChangeDialog() {
     TextEditingController oldPinController = TextEditingController();
     TextEditingController newPinController = TextEditingController();
@@ -99,8 +107,7 @@ class _MoreScreenState extends State<MoreScreen> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              // এখানে API কল করে পিন আপডেট হবে (Apps Script আপডেটের পর)
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("পিন আপডেটের ফিচারটি পরবর্তী আপডেটে আসছে")));
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("পিন আপডেট ফিচারটি পরবর্তী আপডেটে আসছে")));
             },
             child: const Text("সেভ"),
           )
@@ -115,53 +122,75 @@ class _MoreScreenState extends State<MoreScreen> {
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF5F7FA),
-      appBar: AppBar(title: const Text("প্রোফাইল"), backgroundColor: const Color(0xFF00796B), foregroundColor: Colors.white),
+      appBar: AppBar(
+        title: const Text("আমার প্রোফাইল"), 
+        backgroundColor: const Color(0xFF00796B), 
+        foregroundColor: Colors.white
+      ),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // প্রোফাইল হেডার ও স্ট্যাটস
+            // ১. সবুজ হেডার (৩ নং স্ক্রিনশট)
             Container(
-              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
-              decoration: BoxDecoration(color: isDark ? Colors.grey[900] : Colors.white),
-              child: Column(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
+              decoration: const BoxDecoration(
+                color: Color(0xFF00796B),
+                borderRadius: BorderRadius.only(bottomLeft: Radius.circular(30), bottomRight: Radius.circular(30))
+              ),
+              child: Row(
                 children: [
-                  Row(
+                  const CircleAvatar(radius: 35, backgroundColor: Colors.white, child: Icon(Icons.person, size: 40, color: Color(0xFF00796B))),
+                  const SizedBox(width: 15),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const CircleAvatar(radius: 35, backgroundColor: Color(0xFF00796B), child: Icon(Icons.person, size: 40, color: Colors.white)),
-                      const SizedBox(width: 20),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 5),
-                          Text("${phone.substring(0, 3)}***@gmail.com", style: const TextStyle(color: Colors.grey)),
-                        ],
-                      )
+                      Text(name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+                      const SizedBox(height: 5),
+                      Text(role == 'Admin' ? "প্রতিষ্ঠাতা / অ্যাডমিন" : "সাধারণ সদস্য", style: const TextStyle(color: Colors.white70, fontSize: 14)),
                     ],
-                  ),
-                  const SizedBox(height: 20),
-                  // স্ট্যাটস কার্ড
-                  isLoadingStats 
-                    ? const CircularProgressIndicator()
-                    : Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _buildStatItem("মোট জমা", "৳ ${totalDeposit.toStringAsFixed(0)}", Colors.green),
-                          _buildStatItem("মোট লাভ", "৳ ${totalProfit.toStringAsFixed(0)}", Colors.blue),
-                          _buildStatItem("সক্রিয় প্রকল্প", "$activeProjects টি", Colors.orange),
-                        ],
-                      )
+                  )
                 ],
               ),
             ),
-            
-            const SizedBox(height: 10),
 
-            // মেনু অপশন
+            // ২. স্ট্যাটস কার্ড (মোট বিনিয়োগ, লাভ ইত্যাদি)
+            Transform.translate(
+              offset: const Offset(0, -20),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 15),
+                child: isLoadingStats 
+                  ? const Center(child: CircularProgressIndicator())
+                  : Row(
+                      children: [
+                        Expanded(child: _buildStatCard("মোট লাভ", "৳ ${totalProfit.toStringAsFixed(0)}", Icons.trending_up, Colors.green, isDark)),
+                        const SizedBox(width: 10),
+                        Expanded(child: _buildStatCard("মোট জমা", "৳ ${totalDeposit.toStringAsFixed(0)}", Icons.account_balance_wallet, Colors.blue, isDark)),
+                        const SizedBox(width: 10),
+                        Expanded(child: _buildStatCard("সক্রিয় প্রকল্প", "$activeProjects টি", Icons.layers, Colors.orange, isDark)),
+                      ],
+                    ),
+              ),
+            ),
+
+            // ৩. মেনু অপশন
             _buildMenuTile(Icons.notifications_none, "নোটিফিকেশন সেটিংস", () {
               Navigator.push(context, MaterialPageRoute(builder: (c) => const AppSettingsScreen()));
             }),
             _buildMenuTile(Icons.security, "সুরক্ষা ও গোপনীয়তা (পিন)", _showPinChangeDialog),
+            
+            // 🔥 ডার্ক মোড অপশন (ভিডিওর জায়গায় বসানো হলো)
+            SwitchListTile(
+              secondary: const Icon(Icons.dark_mode, color: Colors.blueGrey),
+              title: const Text("ডার্ক মোড", style: TextStyle(fontWeight: FontWeight.w500)),
+              value: themeNotifier.value == ThemeMode.dark,
+              activeColor: const Color(0xFF00796B),
+              onChanged: (val) async {
+                themeNotifier.value = val ? ThemeMode.dark : ThemeMode.light;
+                SharedPreferences prefs = await SharedPreferences.getInstance();
+                await prefs.setBool('isDarkMode', val);
+              },
+            ),
+
             _buildMenuTile(Icons.play_circle_fill, "ভিডিও টিউটোরিয়াল", () {
               Navigator.push(context, MaterialPageRoute(builder: (c) => const VideoTutorialScreen()));
             }),
@@ -170,8 +199,7 @@ class _MoreScreenState extends State<MoreScreen> {
                 context: context,
                 applicationName: "বিনিয়োগ উদ্যোক্তা",
                 applicationVersion: "1.0.0",
-                applicationIcon: const Icon(Icons.monetization_on, color: Color(0xFF00796B), size: 50),
-                children: [const Text("সমিতির সব হিসাব এক অ্যাপে। ডেভেলপড বাই বিনিয়োগ উদ্যোক্তা টিম।")]
+                children: [const Text("সমিতির সব হিসাব এক অ্যাপে।")]
               );
             }),
             
@@ -182,9 +210,29 @@ class _MoreScreenState extends State<MoreScreen> {
               title: const Text("লগআউট", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
               onTap: _logout,
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 40),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildStatCard(String title, String value, IconData icon, Color color, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.grey[800] : Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5)]
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 8),
+          Text(title, style: const TextStyle(color: Colors.grey, fontSize: 10)),
+          const SizedBox(height: 4),
+          FittedBox(child: Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 14))),
+        ],
       ),
     );
   }
@@ -195,16 +243,6 @@ class _MoreScreenState extends State<MoreScreen> {
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
       trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
       onTap: onTap,
-    );
-  }
-
-  Widget _buildStatItem(String title, String value, Color color) {
-    return Column(
-      children: [
-        Text(title, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-        const SizedBox(height: 5),
-        Text(value, style: TextStyle(color: color, fontSize: 16, fontWeight: FontWeight.bold)),
-      ],
     );
   }
 }
