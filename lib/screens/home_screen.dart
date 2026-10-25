@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart'; 
+import 'package:marquee/marquee.dart';
 
 import '../services/api_service.dart';
 import 'members_screen.dart';
@@ -18,6 +19,8 @@ import 'report_screen.dart';
 import 'transaction_list_screen.dart';
 import 'investment_screen.dart';
 import 'committee_screen.dart'; 
+import 'notice_screen.dart'; // নতুন
+import 'bank_screen.dart'; // নতুন
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -108,17 +111,23 @@ class HomeContentState extends State<HomeContent> {
   String userName = "Admin";
   String userRole = "Member";
   bool _isLoadingStats = true;
-  bool _showTotalAssets = false; 
+  
+  // মোট সম্পদ এবং স্ক্র্যাচ কার্ড অ্যানিমেশন
+  bool _isBalanceVisible = false;
+  double totalAssets = 0.0;
 
   double cashInHand = 0.0;
   double todayDeposit = 0.0;
   double todayExpense = 0.0;
   int totalTransactions = 0;
   List<dynamic> recentTransactions = [];
+  String latestNotice = "অ্যাপে স্বাগতম! নতুন আপডেট পেতে চোখ রাখুন।"; // ডামি নোটিশ
 
+  // 🔥 আপনার আপলোড করা ব্যানারগুলো এখানে যুক্ত করা হলো
   final List<String> banners = [
-    'https://via.placeholder.com/800x300/00796B/FFFFFF?text=Banner+1',
-    'https://via.placeholder.com/800x300/F44336/FFFFFF?text=Banner+2',
+    'assets/banner1.png',
+    'assets/banner2.png',
+    'assets/banner3.png',
   ];
 
   @override
@@ -155,6 +164,7 @@ class HomeContentState extends State<HomeContent> {
       double tempTodayExpense = 0.0;
       int tempTotalTx = response.length;
       List<dynamic> tempRecent = [];
+      double tempTotalAssets = 0.0;
 
       String todayDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
@@ -162,6 +172,13 @@ class HomeContentState extends State<HomeContent> {
         String type = tx['Type'].toString();
         double amount = double.tryParse(tx['Amount'].toString()) ?? 0.0;
         String dateStr = tx['Date'].toString();
+        String status = tx['Status']?.toString() ?? 'Paid';
+
+        // মোট সম্পদ (জমা + আয় + বিনিয়োগ) - খরচ
+        if (status == 'Paid') {
+          if (type == 'জমা' || type == 'আয়' || type == 'বিনিয়োগ') tempTotalAssets += amount;
+          else if (type == 'খরচ') tempTotalAssets -= amount;
+        }
 
         if (type == 'জমা' || type == 'আয়' || type == 'বিনিয়োগ') tempCash += amount;
         else if (type == 'খরচ') tempCash -= amount;
@@ -184,6 +201,7 @@ class HomeContentState extends State<HomeContent> {
         todayExpense = tempTodayExpense;
         totalTransactions = tempTotalTx;
         recentTransactions = tempRecent;
+        totalAssets = tempTotalAssets;
         _isLoadingStats = false;
       });
     } else {
@@ -193,6 +211,8 @@ class HomeContentState extends State<HomeContent> {
 
   @override
   Widget build(BuildContext context) {
+    bool isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return RefreshIndicator(
       onRefresh: fetchDashboardData,
       child: SingleChildScrollView(
@@ -200,8 +220,9 @@ class HomeContentState extends State<HomeContent> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ১. টপ বার (মেনু, মোট সম্পদ, প্রোফাইল)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -211,30 +232,103 @@ class HomeContentState extends State<HomeContent> {
                       onPressed: () => Scaffold.of(context).openDrawer(),
                     ),
                   ),
-                  const Icon(Icons.person, color: Color(0xFF00796B), size: 30),
+                  
+                  // 🔥 মোট সম্পদ (Tap for Balance) - মাঝখানে
+                  GestureDetector(
+                    onTap: () => setState(() => _isBalanceVisible = !_isBalanceVisible),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: _isBalanceVisible ? const Color(0xFF8E24AA) : Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Column(
+                        children: [
+                          Text("মোট সম্পদ", style: TextStyle(fontSize: 10, color: _isBalanceVisible ? Colors.white70 : Colors.grey)),
+                          Text(
+                            _isBalanceVisible ? "৳ ${totalAssets.toStringAsFixed(0)}" : "Tap to see",
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: _isBalanceVisible ? Colors.white : Colors.grey),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  IconButton(
+                    icon: const Icon(Icons.person, color: Color(0xFF00796B), size: 30),
+                    onPressed: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (c) => const MoreScreen()));
+                    },
+                  ),
                 ],
               ),
             ),
             
+            // ২. স্লাইডিং ব্যানার (মাঝ বরাবর ফিক্স)
             SizedBox(
               height: 160,
               child: CarouselSlider(
                 carouselController: _carouselController,
                 options: CarouselOptions(
-                  autoPlay: true, autoPlayInterval: const Duration(seconds: 3), enlargeCenterPage: true, viewportFraction: 0.9,
+                  autoPlay: true, 
+                  autoPlayInterval: const Duration(seconds: 3), 
+                  enlargeCenterPage: true, 
+                  viewportFraction: 0.9, // এটি ১.০ করলে ফুল স্ক্রিন হবে
+                  padEnds: true, // এটি true করলে মাঝ বরাবর থাকবে
                   onPageChanged: (index, reason) => setState(() => _currentBanner = index),
                 ),
                 items: banners.map((bannerUrl) => Builder(
                   builder: (context) => Container(
                     width: MediaQuery.of(context).size.width,
                     margin: const EdgeInsets.symmetric(horizontal: 5.0),
-                    child: ClipRRect(borderRadius: BorderRadius.circular(15), child: Image.network(bannerUrl, fit: BoxFit.fill, errorBuilder: (c, e, s) => const Center(child: Icon(Icons.broken_image)))),
+                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(15)),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(15), 
+                      // 🔥 Image.asset ব্যবহার করা হলো
+                      child: Image.asset(
+                        bannerUrl, 
+                        fit: BoxFit.cover, 
+                        errorBuilder: (c, e, s) => Container(color: Colors.grey.shade300, child: const Center(child: Icon(Icons.image)))
+                      )
+                    ),
                   ),
                 )).toList(),
               ),
             ),
             const SizedBox(height: 10),
             
+            // ৩. নোটিশ (Marquee)
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFE0B2), // নোটিশ আইকনের হালকা কমলা কালার
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.orange.shade300),
+              ),
+              child: Row(
+                children: [
+                  const SizedBox(width: 10),
+                  const Icon(Icons.campaign, color: Colors.deepOrange, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: SizedBox(
+                      height: 20,
+                      child: Marquee(
+                        text: latestNotice,
+                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.deepOrange),
+                        scrollAxis: Axis.horizontal,
+                        blankSpace: 50.0,
+                        velocity: 50.0,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // ৪. লাল বক্স (বকেয়া)
             InkWell(
               onTap: () {
                 Navigator.push(context, MaterialPageRoute(builder: (c) => const DueListScreen()));
@@ -259,6 +353,7 @@ class HomeContentState extends State<HomeContent> {
               ),
             ),
 
+            // ৫. শুভেচ্ছা
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15),
               child: Row(children: [
@@ -269,45 +364,24 @@ class HomeContentState extends State<HomeContent> {
             const Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("বিনিয়োগ উদ্যোক্তা", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold))),
             const SizedBox(height: 20),
             
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 15),
-              child: GestureDetector(
-                onTap: () => setState(() => _showTotalAssets = !_showTotalAssets),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 15),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF8E24AA), 
-                    borderRadius: BorderRadius.circular(15),
-                    boxShadow: [BoxShadow(color: const Color(0xFF8E24AA).withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))],
-                  ),
-                  child: Center(
-                    child: Text(
-                      _showTotalAssets ? "৳ ${cashInHand.toStringAsFixed(0)}" : "Tap for Balance",
-                      style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            
+            // ৬. ৪টি কার্ড
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15),
               child: _isLoadingStats 
                 ? const Center(child: CircularProgressIndicator())
                 : Row(children: [
-                    Expanded(child: _buildInfoCard("হাতে নগদ", "৳ ${cashInHand.toStringAsFixed(0)}", Icons.account_balance_wallet, Colors.blue)),
+                    Expanded(child: _buildInfoCard("হাতে নগদ", "৳ ${cashInHand.toStringAsFixed(0)}", Icons.account_balance_wallet, Colors.blue, isDark)),
                     const SizedBox(width: 8),
-                    Expanded(child: _buildInfoCard("আজকের জমা", "৳ ${todayDeposit.toStringAsFixed(0)}", Icons.arrow_downward, Colors.green)),
+                    Expanded(child: _buildInfoCard("আজকের জমা", "৳ ${todayDeposit.toStringAsFixed(0)}", Icons.arrow_downward, Colors.green, isDark)),
                     const SizedBox(width: 8),
-                    Expanded(child: _buildInfoCard("আজকের খরচ", "৳ ${todayExpense.toStringAsFixed(0)}", Icons.arrow_upward, Colors.orange)),
+                    Expanded(child: _buildInfoCard("আজকের খরচ", "৳ ${todayExpense.toStringAsFixed(0)}", Icons.arrow_upward, Colors.orange, isDark)),
                     const SizedBox(width: 8),
-                    Expanded(child: _buildInfoCard("সব লেনদেন", "$totalTransactions টি", Icons.receipt_long, Colors.red)),
+                    Expanded(child: _buildInfoCard("সব লেনদেন", "$totalTransactions টি", Icons.receipt_long, Colors.red, isDark)),
                   ]),
             ),
             const SizedBox(height: 20),
             
+            // ৭. ৪টি অ্যাকশন বাটন
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15),
               child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
@@ -319,6 +393,7 @@ class HomeContentState extends State<HomeContent> {
             ),
             const SizedBox(height: 30),
             
+            // ৮. মডিউল ও ফিচার
             const Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("মডিউল ও ফিচার", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey))),
             const SizedBox(height: 15),
             Padding(
@@ -327,29 +402,40 @@ class HomeContentState extends State<HomeContent> {
                 crossAxisCount: 3, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
                 mainAxisSpacing: 15, crossAxisSpacing: 15, childAspectRatio: 1,
                 children: [
-                  InkWell(onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => const MembersScreen())), borderRadius: BorderRadius.circular(15), child: _buildModuleIcon(Icons.people, "সদস্য", Colors.blue)),
+                  InkWell(onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => const MembersScreen())), borderRadius: BorderRadius.circular(15), child: _buildModuleIcon(Icons.people, "সদস্য", Colors.blue, isDark)),
+                  
                   if (userRole == 'Admin')
-                    InkWell(onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => const AddMemberScreen())), borderRadius: BorderRadius.circular(15), child: _buildModuleIcon(Icons.person_add, "সদস্য যোগ", Colors.green)),
+                    InkWell(onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => const AddMemberScreen())), borderRadius: BorderRadius.circular(15), child: _buildModuleIcon(Icons.person_add, "সদস্য যোগ", Colors.green, isDark)),
                   
-                  InkWell(onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => CommitteeScreen(userRole: userRole))), borderRadius: BorderRadius.circular(15), child: _buildModuleIcon(Icons.group, "কমিটি", Colors.orange)),
+                  InkWell(onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => CommitteeScreen(userRole: userRole))), borderRadius: BorderRadius.circular(15), child: _buildModuleIcon(Icons.group, "কমিটি", Colors.orange, isDark)),
                   
-                  _buildModuleIcon(Icons.assignment_ind, "দায়িত্ব", Colors.purple),
-                  _buildModuleIcon(Icons.pie_chart, "শেয়ার", Colors.deepPurple),
-                  _buildModuleIcon(Icons.bar_chart, "রিপোর্ট", Colors.indigo),
-                  _buildModuleIcon(Icons.fastfood, "ফান্ড", Colors.blueAccent),
-                  _buildModuleIcon(Icons.menu_book, "খতিয়ান", Colors.orangeAccent),
-                  _buildModuleIcon(Icons.account_balance, "ব্যাংক", Colors.lightBlue),
-                  _buildModuleIcon(Icons.receipt, "ভাউচার", Colors.blue),
-                  _buildModuleIcon(Icons.fact_check, "অনুমোদন", Colors.green),
-                  _buildModuleIcon(Icons.point_of_sale, "ক্যাশ ক্রজিং", Colors.orange),
-                  _buildModuleIcon(Icons.campaign, "নোটিশ", Colors.deepOrange),
-                  _buildModuleIcon(Icons.inventory, "স্টক", Colors.purple),
-                  _buildModuleIcon(Icons.people_outline, "পরিচালক", Colors.blue),
+                  _buildModuleIcon(Icons.assignment_ind, "দায়িত্ব", Colors.purple, isDark),
+                  _buildModuleIcon(Icons.pie_chart, "শেয়ার", Colors.deepPurple, isDark),
+                  
+                  // রিপোর্ট লিংক
+                  InkWell(onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => const ReportScreen())), borderRadius: BorderRadius.circular(15), child: _buildModuleIcon(Icons.bar_chart, "রিপোর্ট", Colors.indigo, isDark)),
+                  
+                  _buildModuleIcon(Icons.fastfood, "ফান্ড", Colors.blueAccent, isDark),
+                  _buildModuleIcon(Icons.menu_book, "খতিয়ান", Colors.orangeAccent, isDark),
+                  
+                  // ব্যাংক পেজ লিংক
+                  InkWell(onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => const BankScreen())), borderRadius: BorderRadius.circular(15), child: _buildModuleIcon(Icons.account_balance, "ব্যাংক", Colors.lightBlue, isDark)),
+                  
+                  _buildModuleIcon(Icons.receipt, "ভাউচার", Colors.blue, isDark),
+                  _buildModuleIcon(Icons.fact_check, "অনুমোদন", Colors.green, isDark),
+                  _buildModuleIcon(Icons.point_of_sale, "ক্যাশ ক্রজিং", Colors.orange, isDark),
+                  
+                  // নোটিশ পেজ লিংক
+                  InkWell(onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => const NoticeScreen())), borderRadius: BorderRadius.circular(15), child: _buildModuleIcon(Icons.campaign, "নোটিশ", Colors.deepOrange, isDark)),
+                  
+                  _buildModuleIcon(Icons.inventory, "স্টক", Colors.purple, isDark),
+                  _buildModuleIcon(Icons.people_outline, "পরিচালক", Colors.blue, isDark),
                 ],
               ),
             ),
             const SizedBox(height: 30),
 
+            // ৯. সাম্প্রতিক লেনদেন
             const Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("সাম্প্রতিক লেনদেন", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey))),
             const SizedBox(height: 15),
             Padding(
@@ -360,6 +446,7 @@ class HomeContentState extends State<HomeContent> {
                       children: recentTransactions.map((tx) {
                         bool isDeposit = tx['Type'] == 'জমা';
                         return Card(
+                          color: isDark ? Colors.grey[800] : Colors.white,
                           margin: const EdgeInsets.only(bottom: 10),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           child: ListTile(
@@ -382,14 +469,18 @@ class HomeContentState extends State<HomeContent> {
     );
   }
 
-  Widget _buildInfoCard(String title, String amount, IconData icon, Color color) {
+  Widget _buildInfoCard(String title, String amount, IconData icon, Color color, bool isDark) {
     return Container(
       height: 100, padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 5),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5)]),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.grey[800] : Colors.white, 
+        borderRadius: BorderRadius.circular(15), 
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5)]
+      ),
       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
         CircleAvatar(backgroundColor: color.withOpacity(0.1), child: Icon(icon, color: color, size: 20)),
         const SizedBox(height: 8),
-        FittedBox(child: Text(title, style: const TextStyle(fontSize: 11, color: Colors.grey))),
+        FittedBox(child: Text(title, style: TextStyle(fontSize: 11, color: isDark ? Colors.white70 : Colors.grey))),
         const SizedBox(height: 4),
         FittedBox(child: Text(amount, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color))),
       ]),
@@ -403,7 +494,7 @@ class HomeContentState extends State<HomeContent> {
           if (type == "বিনিয়োগ") {
              await Navigator.push(context, MaterialPageRoute(builder: (c) => InvestmentScreen(userRole: userRole)));
           } else {
-             await Navigator.push(context, MaterialPageRoute(builder: (c) => TransactionListScreen(type: type)));
+             await Navigator.push(context, MaterialPageRoute(builder: (c) => AddTransactionScreen(type: type)));
           }
           fetchDashboardData(); 
         },
@@ -419,13 +510,17 @@ class HomeContentState extends State<HomeContent> {
     );
   }
 
-  Widget _buildModuleIcon(IconData icon, String label, Color color) {
+  Widget _buildModuleIcon(IconData icon, String label, Color color, bool isDark) {
     return Container(
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 5)]),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.grey[800] : Colors.white, 
+        borderRadius: BorderRadius.circular(15), 
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 5)]
+      ),
       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
         Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(12)), child: Icon(icon, color: color, size: 28)),
         const SizedBox(height: 8),
-        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+        Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: isDark ? Colors.white : Colors.black)),
       ]),
     );
   }
