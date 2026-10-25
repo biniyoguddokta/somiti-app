@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 
 class CommitteeScreen extends StatefulWidget {
-  final String userRole; // 🔥 এই লাইনটি নিশ্চিত করুন
-  const CommitteeScreen({super.key, required this.userRole}); // 🔥 required this.userRole নিশ্চিত করুন
+  final String userRole;
+  const CommitteeScreen({super.key, required this.userRole});
 
   @override
   State<CommitteeScreen> createState() => _CommitteeScreenState();
@@ -14,10 +14,7 @@ class _CommitteeScreenState extends State<CommitteeScreen> {
   bool isLoading = true;
 
   @override
-  void initState() {
-    super.initState();
-    _fetchData();
-  }
+  void initState() { super.initState(); _fetchData(); }
 
   void _fetchData() async {
     setState(() => isLoading = true);
@@ -58,8 +55,10 @@ class _CommitteeScreenState extends State<CommitteeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF5F7FA),
       appBar: AppBar(title: const Text("কমিটি ও দায়িত্ব"), backgroundColor: const Color(0xFF00796B), foregroundColor: Colors.white),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -72,12 +71,13 @@ class _CommitteeScreenState extends State<CommitteeScreen> {
                 String designation = member['Designation']?.toString() ?? "সদস্য";
 
                 return Card(
-                  color: Colors.white,
+                  color: isDark ? Colors.grey[800] : Colors.white,
                   margin: const EdgeInsets.only(bottom: 10),
                   child: ListTile(
                     leading: CircleAvatar(backgroundColor: Colors.blue, child: Text(name[0].toUpperCase(), style: const TextStyle(color: Colors.white))),
                     title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text("পদবি: $designation", style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                    // 🔥 পদবি ধূসর কালারে ছোট করে দেখানো হলো
+                    subtitle: Text(designation, style: const TextStyle(color: Colors.grey, fontSize: 12)),
                     trailing: widget.userRole == 'Admin' 
                       ? IconButton(
                           icon: const Icon(Icons.edit, color: Colors.blue),
