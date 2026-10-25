@@ -4,7 +4,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 
-void main() {
+// ডার্ক মোডের জন্য গ্লোবাল নোটিফায়ার
+final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  bool isDark = prefs.getBool('isDarkMode') ?? false;
+  themeNotifier.value = isDark ? ThemeMode.dark : ThemeMode.light;
+  
   runApp(const MyApp());
 }
 
@@ -13,23 +21,34 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'বিনিয়োগ উদ্যোক্তা', // 🔥 এখানে নতুন নাম দেওয়া হলো
-      theme: ThemeData(
-        primaryColor: const Color(0xFF00796B),
-        scaffoldBackgroundColor: const Color(0xFFF5F7FA),
-        textTheme: GoogleFonts.hindSiliguriTextTheme(Theme.of(context).textTheme),
-      ),
-      home: const SplashScreen(),
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: themeNotifier,
+      builder: (context, currentMode, child) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'বিনিয়োগ উদ্যোক্তা',
+          themeMode: currentMode,
+          theme: ThemeData(
+            brightness: Brightness.light,
+            primaryColor: const Color(0xFF00796B),
+            scaffoldBackgroundColor: const Color(0xFFF5F7FA),
+            textTheme: GoogleFonts.hindSiliguriTextTheme(Theme.of(context).textTheme),
+          ),
+          darkTheme: ThemeData(
+            brightness: Brightness.dark,
+            primaryColor: const Color(0xFF00796B),
+            scaffoldBackgroundColor: const Color(0xFF121212),
+            textTheme: GoogleFonts.hindSiliguriTextTheme(Theme.of(context).textTheme),
+          ),
+          home: const SplashScreen(),
+        );
+      }
     );
   }
 }
 
-// স্প্ল্যাশ স্ক্রিন (লগইন চেক করার জন্য)
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
-
   @override
   State<SplashScreen> createState() => _SplashScreenState();
 }
@@ -45,9 +64,7 @@ class _SplashScreenState extends State<SplashScreen> {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-
       await Future.delayed(const Duration(seconds: 2));
-
       if (!mounted) return;
       
       if (isLoggedIn) {
@@ -56,8 +73,6 @@ class _SplashScreenState extends State<SplashScreen> {
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginScreen()));
       }
     } catch (e) {
-      print("Error reading login status: $e");
-      await Future.delayed(const Duration(seconds: 2));
       if (!mounted) return;
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginScreen()));
     }
@@ -65,10 +80,6 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: CircularProgressIndicator(color: Color(0xFF00796B)),
-      ),
-    );
+    return const Scaffold(body: Center(child: CircularProgressIndicator(color: Color(0xFF00796B))));
   }
 }
