@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
-import '../main.dart'; // themeNotifier এর জন্য
+import '../main.dart'; // themeNotifier
 import 'login_screen.dart';
 import 'app_settings_screen.dart';
+import 'video_tutorial_screen.dart';
 
 class MoreScreen extends StatefulWidget {
   const MoreScreen({super.key});
@@ -15,9 +16,11 @@ class MoreScreen extends StatefulWidget {
 class _MoreScreenState extends State<MoreScreen> {
   String name = "", role = "", phone = "";
   bool isLoadingStats = true;
+  bool _showInvestment = false;
 
   double totalDeposit = 0.0;
   double totalProfit = 0.0;
+  double totalInvestment = 0.0;
   int activeProjects = 0;
 
   @override
@@ -33,7 +36,6 @@ class _MoreScreenState extends State<MoreScreen> {
       role = prefs.getString('userRole') ?? "Member";
       phone = prefs.getString('userPhone') ?? "";
     });
-
     _fetchStats();
   }
 
@@ -51,14 +53,21 @@ class _MoreScreenState extends State<MoreScreen> {
     var invRes = await ApiService.getInvestments();
     if (invRes is List) {
       double tempProfit = 0.0;
+      double tempInv = 0.0;
       int tempActive = 0;
       for (var inv in invRes) {
         double profit = double.tryParse(inv['ProfitAmount'].toString()) ?? 0.0;
+        double amount = double.tryParse(inv['InvestAmount'].toString()) ?? 0.0;
+        
         tempProfit += profit;
-        if (inv['Status'] == 'সক্রিয়') tempActive++;
+        if (inv['Status'] == 'সক্রিয়') {
+          tempActive++;
+          tempInv += amount; 
+        }
       }
       setState(() {
         totalProfit = tempProfit;
+        totalInvestment = tempInv;
         activeProjects = tempActive;
         isLoadingStats = false;
       });
@@ -74,66 +83,32 @@ class _MoreScreenState extends State<MoreScreen> {
     Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const LoginScreen()), (route) => false);
   }
 
-  void _showPinChangeDialog() {
-    TextEditingController oldPinController = TextEditingController();
-    TextEditingController newPinController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("পিন পরিবর্তন করুন"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: oldPinController, obscureText: true, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "পুরোনো পিন")),
-            const SizedBox(height: 10),
-            TextField(controller: newPinController, obscureText: true, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "নতুন পিন")),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("বাতিল")),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("পিন আপডেট ফিচারটি পরবর্তী আপডেটে আসছে")));
-            },
-            child: const Text("সেভ"),
-          )
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF5F7FA),
-      appBar: AppBar(
-        title: const Text("আমার প্রোফাইল"), 
-        backgroundColor: const Color(0xFF00796B), 
-        foregroundColor: Colors.white
-      ),
+      // 🔥 ৪ নং স্ক্রিনশটের মতো ডিজাইন শুরু
       body: SingleChildScrollView(
         child: Column(
           children: [
+            // সবুজ হেডার
             Container(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
+              padding: const EdgeInsets.fromLTRB(20, 50, 20, 30),
               decoration: const BoxDecoration(
                 color: Color(0xFF00796B),
-                borderRadius: BorderRadius.only(bottomLeft: Radius.circular(30), bottomRight: Radius.circular(30))
+                borderRadius: BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20))
               ),
               child: Row(
                 children: [
-                  const CircleAvatar(radius: 35, backgroundColor: Colors.white, child: Icon(Icons.person, size: 40, color: Color(0xFF00796B))),
+                  const CircleAvatar(radius: 30, backgroundColor: Colors.white, child: Icon(Icons.person, size: 35, color: Color(0xFF00796B))),
                   const SizedBox(width: 15),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
                       const SizedBox(height: 5),
-                      // 🔥 শুধু "অ্যাডমিন" করা হলো
                       Text(role == 'Admin' ? "অ্যাডমিন" : "সাধারণ সদস্য", style: const TextStyle(color: Colors.white70, fontSize: 14)),
                     ],
                   )
@@ -141,28 +116,62 @@ class _MoreScreenState extends State<MoreScreen> {
               ),
             ),
 
+            // ওভারল্যাপিং স্ট্যাটস কার্ড
             Transform.translate(
-              offset: const Offset(0, -20),
+              offset: const Offset(0, -15),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 15),
                 child: isLoadingStats 
                   ? const Center(child: CircularProgressIndicator())
-                  : Row(
+                  : Column(
                       children: [
-                        Expanded(child: _buildStatCard("মোট লাভ", "৳ ${totalProfit.toStringAsFixed(0)}", Icons.trending_up, Colors.green, isDark)),
-                        const SizedBox(width: 10),
-                        Expanded(child: _buildStatCard("মোট জমা", "৳ ${totalDeposit.toStringAsFixed(0)}", Icons.account_balance_wallet, Colors.blue, isDark)),
-                        const SizedBox(width: 10),
-                        Expanded(child: _buildStatCard("সক্রিয় প্রকল্প", "$activeProjects টি", Icons.layers, Colors.orange, isDark)),
+                        // মোট বিনিয়োগ কার্ড
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(color: const Color(0xFF00796B), borderRadius: BorderRadius.circular(15)),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text("মোট বিনিয়োগ", style: TextStyle(color: Colors.white70, fontSize: 14)),
+                                  const SizedBox(height: 5),
+                                  Text(_showInvestment ? "৳ ${totalInvestment.toStringAsFixed(0)}" : "৳ ******", style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                              IconButton(
+                                icon: Icon(_showInvestment ? Icons.visibility : Icons.visibility_off, color: Colors.white),
+                                onPressed: () => setState(() => _showInvestment = !_showInvestment),
+                              )
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 15),
+                        
+                        // ৩টি ছোট কার্ড
+                        Row(
+                          children: [
+                            Expanded(child: _buildStatCard("মোট লাভ", "৳ ${totalProfit.toStringAsFixed(0)}", Icons.trending_up, Colors.green, isDark)),
+                            const SizedBox(width: 10),
+                            Expanded(child: _buildStatCard("মোট জমা", "৳ ${totalDeposit.toStringAsFixed(0)}", Icons.account_balance_wallet, Colors.teal, isDark)),
+                            const SizedBox(width: 10),
+                            Expanded(child: _buildStatCard("সক্রিয় প্রকল্প", "$activeProjects টি", Icons.layers, Colors.orange, isDark)),
+                          ],
+                        ),
                       ],
                     ),
               ),
             ),
 
+            // মেনু অপশনগুলো
             _buildMenuTile(Icons.notifications_none, "নোটিফিকেশন সেটিংস", () {
               Navigator.push(context, MaterialPageRoute(builder: (c) => const AppSettingsScreen()));
             }),
-            _buildMenuTile(Icons.security, "সুরক্ষা ও গোপনীয়তা (পিন)", _showPinChangeDialog),
+            _buildMenuTile(Icons.security, "সুরক্ষা ও গোপনীয়তা (পিন)", () {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("পিন আপডেট ফিচারটি পরবর্তী আপডেটে আসছে")));
+            }),
             
             SwitchListTile(
               secondary: const Icon(Icons.dark_mode, color: Colors.blueGrey),
@@ -176,8 +185,9 @@ class _MoreScreenState extends State<MoreScreen> {
               },
             ),
 
-            // 🔥 ভিডিও টিউটোরিয়াল বাদ দেওয়া হলো
-
+            _buildMenuTile(Icons.play_circle_fill, "ভিডিও টিউটোরিয়াল", () {
+              Navigator.push(context, MaterialPageRoute(builder: (c) => const VideoTutorialScreen()));
+            }),
             _buildMenuTile(Icons.info_outline, "অ্যাপ সম্পর্কে", () {
               showAboutDialog(
                 context: context,
