@@ -2,16 +2,21 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  // 🔥 এখানে শুধু /exec পর্যন্ত লিংক দিতে হবে, এর পরে ?action= থাকবে না।
+  // 🔥 আপনার Apps Script URL (শেষে /exec আছে, ?action= নেই)
   static const String baseUrl = 'https://script.google.com/macros/s/AKfycby8WDNL-Mvy34P04vw_zbkexLjE8OjqDIXVlP7HYS6Bq6R_v8SEqhLPx3sL0Q89YdvetQ/exec'; 
 
+  // ==========================================
+  // ১. ডেটা পড়ার ফাংশন (GET)
+  // ==========================================
   static Future<dynamic> _getData(String action) async {
     try {
       final res = await http.get(Uri.parse('$baseUrl?action=$action'));
+      
+      if (res.body.contains("<!DOCTYPE html>") || res.body.contains("<html>")) {
+        return {"error": "Permission Issue: API returned HTML. Deploy চেক করুন।"};
+      }
+
       if (res.statusCode == 200) {
-        if (res.body.contains("<!DOCTYPE html>")) {
-          return {"error": "API Permission Issue"};
-        }
         return jsonDecode(res.body);
       }
       return {"error": "Server Error: ${res.statusCode}"};
@@ -20,6 +25,9 @@ class ApiService {
     }
   }
 
+  // ==========================================
+  // ২. ডেটা পাঠানোর ফাংশন (POST) - ঠিক করা হলো
+  // ==========================================
   static Future<Map<String, dynamic>> _postData(String action, Map<String, dynamic> body) async {
     try {
       final res = await http.post(
@@ -27,23 +35,44 @@ class ApiService {
         headers: {"Content-Type": "application/json"},
         body: jsonEncode(body),
       );
-      if (res.statusCode == 200 || res.statusCode == 302) {
-        if (res.body.contains("<!DOCTYPE html>")) {
-          return {"status": "error", "message": "Permission Issue"};
-        }
-        if (res.statusCode == 302) {
-          return {"status": "success", "message": "Success (302)"};
-        }
-        return jsonDecode(res.body);
+
+      // যদি গুগল লগইন পেজ বা HTML এরর পাঠায়
+      if (res.body.contains("<!DOCTYPE html>") || res.body.contains("<html>")) {
+        return {"status": "error", "message": "Permission Issue: Google HTML Page returned. Apps Script-এ 'Anyone' দেওয়া আছে কি না চেক করুন।"};
       }
-      return {"status": "error", "message": "Server Error: ${res.statusCode}"};
+
+      // যদি স্ট্যাটাস ২০০ হয়
+      if (res.statusCode == 200) {
+        try {
+          var decoded = jsonDecode(res.body);
+          if (decoded['status'] == 'success') {
+            return decoded;
+          } else {
+            return {"status": "error", "message": decoded['message'] ?? "Server returned error"};
+          }
+        } catch (e) {
+          return {"status": "error", "message": "Invalid JSON response from server"};
+        }
+      }
+      
+      // ৩০২ রিডাইরেক্ট আসলে সেটি সফল নয়, বরং লগইন পেজে পাঠানোর চেষ্টা
+      if (res.statusCode == 302) {
+         return {"status": "error", "message": "Redirect Error (302). Apps Script Deploy সেটিংস চেক করুন।"};
+      }
+
+      return {"status": "error", "message": "Server Error Code: ${res.statusCode}"};
     } catch (e) { 
       return {"status": "error", "message": "Internet Issue: $e"}; 
     }
   }
 
+  // ==========================================
+  // ৩. নির্দিষ্ট API মেথডসমূহ
+  // ==========================================
+
   // Members & Committee
   static Future<dynamic> getAllMembers() => _getData("getAllMembers");
+  
   static Future<Map<String, dynamic>> addMember({required String name, required String phone, required String email, required String pin, required String role, required String designation}) 
     => _postData("addMember", {"name": name, "phone": phone, "email": email, "pin": pin, "role": role, "designation": designation});
   
@@ -67,6 +96,7 @@ class ApiService {
 
   // Investments
   static Future<dynamic> getInvestments() => _getData("getInvestments");
+  
   static Future<Map<String, dynamic>> addInvestment({required String sector, required String projectName, required String investAmount, required String startDate, required String endDate, required String profitAmount}) 
     => _postData("addInvestment", {"sector": sector, "projectName": projectName, "investAmount": investAmount, "startDate": startDate, "endDate": endDate, "profitAmount": profitAmount});
 
