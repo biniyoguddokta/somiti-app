@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  static const String baseUrl = 'https://script.google.com/macros/s/AKfycby8WDNL-Mvy34P04vw_zbkexLjE8OjqDIXVlP7HYS6Bq6R_v8SEqhLPx3sL0Q89YdvetQ/exec'; // 🔥 আপনার URL দিন
+  static const String baseUrl = 'YOUR_APPS_SCRIPT_URL_HERE'; // 🔥 আপনার URL দিন
 
   static Future<dynamic> _getData(String action) async {
     try {
@@ -39,15 +39,19 @@ class ApiService {
     => _postData("updateRole", {"phone": phone, "newRole": newRole});
   static Future<Map<String, dynamic>> updateDesignation({required String phone, required String designation}) 
     => _postData("updateDesignation", {"phone": phone, "designation": designation});
+  
+  // পিন পরিবর্তন
+  static Future<Map<String, dynamic>> updatePin({required String phone, required String newPin}) 
+    => _postData("updatePin", {"phone": phone, "newPin": newPin});
 
   // Transactions
   static Future<dynamic> getTransactions() => _getData("getTransactions");
-  static Future<Map<String, dynamic>> addTransaction({required String type, required String amount, required String note, required String memberName, required String status}) 
-    => _postData("addTransaction", {"type": type, "amount": amount, "note": note, "memberName": memberName, "status": status});
+  static Future<Map<String, dynamic>> addTransaction({required String type, required String amount, required String note, required String memberName, required String status, required String date}) 
+    => _postData("addTransaction", {"type": type, "amount": amount, "note": note, "memberName": memberName, "status": status, "date": date});
   static Future<Map<String, dynamic>> updateTransactionStatus({required String rowIndex, required String status})
     => _postData("updateTransactionStatus", {"rowIndex": rowIndex, "status": status});
 
-  // Investments (বিনিয়োগ)
+  // Investments
   static Future<dynamic> getInvestments() => _getData("getInvestments");
   static Future<Map<String, dynamic>> addInvestment({required String sector, required String projectName, required String investAmount, required String startDate, required String endDate, required String profitAmount}) 
     => _postData("addInvestment", {"sector": sector, "projectName": projectName, "investAmount": investAmount, "startDate": startDate, "endDate": endDate, "profitAmount": profitAmount});
