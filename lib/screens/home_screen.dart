@@ -25,6 +25,7 @@ import 'app_settings_screen.dart';
 import 'entrepreneur_settings_screen.dart';
 import 'video_tutorial_screen.dart';
 import 'guide_screen.dart';
+import 'transaction_history_screen.dart'; // 🔥 নতুন ইমপোর্ট
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -193,7 +194,6 @@ class HomeContentState extends State<HomeContent> {
         String dateStr = tx['Date'].toString();
         String status = tx['Status']?.toString() ?? 'Paid';
 
-        // 🔥 মোট সম্পদ হিসাব (জমা + আয়) - (বিনিয়োগ + খরচ)
         if (status == 'Paid') {
           if (type == 'জমা' || type == 'আয়') {
              tempTotalAssets += amount;
@@ -242,7 +242,7 @@ class HomeContentState extends State<HomeContent> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // টপ বার
+            // ১. টপ বার
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
               child: Row(
@@ -288,7 +288,7 @@ class HomeContentState extends State<HomeContent> {
               ),
             ),
             
-            // ব্যানার
+            // ২. ব্যানার
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15),
               child: SizedBox(
@@ -324,7 +324,7 @@ class HomeContentState extends State<HomeContent> {
             ),
             const SizedBox(height: 10),
             
-            // নোটিশ
+            // ৩. নোটিশ
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
               padding: const EdgeInsets.symmetric(vertical: 8),
@@ -354,7 +354,7 @@ class HomeContentState extends State<HomeContent> {
               ),
             ),
 
-            // লাল বক্স
+            // ৪. লাল বক্স
             InkWell(
               onTap: () {
                 Navigator.push(context, MaterialPageRoute(builder: (c) => const DueListScreen()));
@@ -380,7 +380,7 @@ class HomeContentState extends State<HomeContent> {
               ),
             ),
 
-            // শুভেচ্ছা
+            // ৫. শুভেচ্ছা
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
               child: Row(children: [
@@ -391,7 +391,7 @@ class HomeContentState extends State<HomeContent> {
             const Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("বিনিয়োগ উদ্যোক্তা", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold))),
             const SizedBox(height: 20),
             
-            // ৪টি কার্ড
+            // ৬. ৪টি কার্ড
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15),
               child: _isLoadingStats 
@@ -403,12 +403,20 @@ class HomeContentState extends State<HomeContent> {
                     const SizedBox(width: 8),
                     Expanded(child: _buildInfoCard("আজকের খরচ", "৳ ${todayExpense.toStringAsFixed(0)}", Icons.arrow_upward, Colors.orange, isDark)),
                     const SizedBox(width: 8),
-                    Expanded(child: _buildInfoCard("সব লেনদেন", "$totalTransactions টি", Icons.receipt_long, Colors.red, isDark)),
+                    // 🔥 এখানে ক্লিক করলে হিস্ট্রি পেজে যাবে
+                    Expanded(
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.push(context, MaterialPageRoute(builder: (c) => const TransactionHistoryScreen()));
+                        },
+                        child: _buildInfoCard("সব লেনদেন", "$totalTransactions টি", Icons.receipt_long, Colors.red, isDark),
+                      ),
+                    ),
                   ]),
             ),
             const SizedBox(height: 20),
             
-            // ৪টি অ্যাকশন বাটন (জমা, খরচ, আয়, বিনিয়োগ)
+            // ৭. ৪টি অ্যাকশন বাটন
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15),
               child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
@@ -420,7 +428,7 @@ class HomeContentState extends State<HomeContent> {
             ),
             const SizedBox(height: 30),
             
-            // মডিউল ও ফিচার
+            // ৮. মডিউল ও ফিচার
             const Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("মডিউল ও ফিচার", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey))),
             const SizedBox(height: 15),
             Padding(
@@ -450,7 +458,7 @@ class HomeContentState extends State<HomeContent> {
             ),
             const SizedBox(height: 30),
 
-            // সাম্প্রতিক লেনদেন
+            // ৯. সাম্প্রতিক লেনদেন
             const Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("সাম্প্রতিক লেনদেন", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey))),
             const SizedBox(height: 15),
             Padding(
@@ -478,12 +486,80 @@ class HomeContentState extends State<HomeContent> {
                     ),
             ),
             const SizedBox(height: 30),
+
+            // ================= নিচের অংশ =================
+            const Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("SMS", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey))),
+            const SizedBox(height: 15),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 15),
+              child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                _buildSmsIcon(Icons.sms, "SMS ক্রেডিট", const Color(0xFF43A047)),
+                _buildSmsIcon(Icons.chat_bubble_outline, "SMS টেম্পলেট", Colors.blue),
+                _buildSmsIcon(Icons.campaign, "বাংক SMS", Colors.orange),
+                _buildSmsIcon(Icons.history, "SMS ইতিহাস", Colors.teal),
+              ]),
+            ),
+            const SizedBox(height: 30),
+
+            const Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("চার্ট ও বিশ্লেষণ", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey))),
+            const SizedBox(height: 15),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 15),
+              child: Container(
+                padding: const EdgeInsets.all(15),
+                decoration: BoxDecoration(color: isDark ? Colors.grey[800] : Colors.white, borderRadius: BorderRadius.circular(15), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5)]),
+                child: Column(children: [
+                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                    const Row(children: [Icon(Icons.show_chart, color: Color(0xFF00796B)), SizedBox(width: 10), Text("আদায় প্রবণতা", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))]),
+                    Row(children: [
+                      Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5), decoration: BoxDecoration(color: const Color(0xFF00796B), borderRadius: BorderRadius.circular(20)), child: const Text("৭ দিন", style: TextStyle(color: Colors.white, fontSize: 12))),
+                      const SizedBox(width: 10),
+                      Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5), decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(20)), child: const Text("৩০ দিন", style: TextStyle(color: Color(0xFF00796B), fontSize: 12))),
+                    ])
+                  ]),
+                  const SizedBox(height: 60),
+                  const Text("এই সময়ে কোনো আদায় নেই", style: TextStyle(color: Colors.grey, fontSize: 16)),
+                  const SizedBox(height: 60),
+                ]),
+              ),
+            ),
+            const SizedBox(height: 30),
+
+            const Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("সেটিংস, শেখা ও সাহায্য", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey))),
+            const SizedBox(height: 15),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 15),
+              child: Row(children: [
+                Expanded(child: _buildSettingsCard(Icons.settings, "অ্যাপ সেটিংস", "শব্দ ও কম্পন", Colors.teal, isDark, () {
+                  Navigator.push(context, MaterialPageRoute(builder: (c) => const AppSettingsScreen()));
+                })),
+                const SizedBox(width: 15),
+                Expanded(child: _buildSettingsCard(Icons.settings_suggest, "উদ্যোক্তা সেটিংস", "ভাষা, দশমিক ও নিয়ম", Colors.green, isDark, () {
+                  Navigator.push(context, MaterialPageRoute(builder: (c) => const EntrepreneurSettingsScreen()));
+                })),
+              ]),
+            ),
+            const SizedBox(height: 15),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 15),
+              child: Row(children: [
+                Expanded(child: _buildSettingsCard(Icons.play_circle_fill, "ভিডিও টিউটোরিয়াল", "দেখে দেখে শিখুন", Colors.red, isDark, () {
+                  Navigator.push(context, MaterialPageRoute(builder: (c) => const VideoTutorialScreen()));
+                })),
+                const SizedBox(width: 15),
+                Expanded(child: _buildSettingsCard(Icons.menu_book, "নির্দেশিকা", "প্রতিটি পাতার ম্যানুয়াল", Colors.orange, isDark, () {
+                  Navigator.push(context, MaterialPageRoute(builder: (c) => const GuideScreen()));
+                })),
+              ]),
+            ),
+            const SizedBox(height: 30),
           ],
         ),
       ),
     );
   }
 
+  // কাস্টম উইজেটসমূহ
   Widget _buildInfoCard(String title, String amount, IconData icon, Color color, bool isDark) {
     return Container(
       height: 100, padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 5),
@@ -529,6 +605,47 @@ class HomeContentState extends State<HomeContent> {
         const SizedBox(height: 8),
         Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: isDark ? Colors.white : Colors.black)),
       ]),
+    );
+  }
+
+  Widget _buildSmsIcon(IconData icon, String label, Color color) {
+    return Column(children: [
+      Container(padding: const EdgeInsets.all(15), decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(15)), child: Icon(icon, color: color, size: 30)),
+      const SizedBox(height: 8),
+      Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+    ]);
+  }
+
+  Widget _buildSettingsCard(IconData icon, String title, String subtitle, Color color, bool isDark, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        height: 80,
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.grey[800] : Colors.white, 
+          borderRadius: BorderRadius.circular(15), 
+          border: Border.all(color: Colors.grey.shade200)
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(10)), child: Icon(icon, color: color)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  const SizedBox(height: 2),
+                  Text(subtitle, style: const TextStyle(color: Colors.grey, fontSize: 10), maxLines: 1, overflow: TextOverflow.ellipsis),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
