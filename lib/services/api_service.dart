@@ -31,23 +31,27 @@ class ApiService {
     } catch (e) { return {"status": "error", "message": "Internet Issue: $e"}; }
   }
 
-  // Members & Committee
+  // Members
   static Future<dynamic> getAllMembers() => _getData("getAllMembers");
   static Future<Map<String, dynamic>> addMember({required String name, required String phone, required String email, required String pin, required String role, required String designation}) 
     => _postData("addMember", {"name": name, "phone": phone, "email": email, "pin": pin, "role": role, "designation": designation});
+  
   static Future<Map<String, dynamic>> updateRole({required String phone, required String newRole}) 
     => _postData("updateRole", {"phone": phone, "newRole": newRole});
+    
   static Future<Map<String, dynamic>> updateDesignation({required String phone, required String designation}) 
     => _postData("updateDesignation", {"phone": phone, "designation": designation});
   
-  // পিন পরিবর্তন
   static Future<Map<String, dynamic>> updatePin({required String phone, required String newPin}) 
     => _postData("updatePin", {"phone": phone, "newPin": newPin});
 
   // Transactions
   static Future<dynamic> getTransactions() => _getData("getTransactions");
+  
+  // 🔥 এখানে date যুক্ত করা হয়েছে
   static Future<Map<String, dynamic>> addTransaction({required String type, required String amount, required String note, required String memberName, required String status, required String date}) 
     => _postData("addTransaction", {"type": type, "amount": amount, "note": note, "memberName": memberName, "status": status, "date": date});
+    
   static Future<Map<String, dynamic>> updateTransactionStatus({required String rowIndex, required String status})
     => _postData("updateTransactionStatus", {"rowIndex": rowIndex, "status": status});
 
@@ -56,7 +60,7 @@ class ApiService {
   static Future<Map<String, dynamic>> addInvestment({required String sector, required String projectName, required String investAmount, required String startDate, required String endDate, required String profitAmount}) 
     => _postData("addInvestment", {"sector": sector, "projectName": projectName, "investAmount": investAmount, "startDate": startDate, "endDate": endDate, "profitAmount": profitAmount});
 
-  // Constitution & Late Fees
+  // Constitution & Meetings
   static Future<dynamic> getConstitution() => _getData("getConstitution");
-  static Future<dynamic> getLateFees() => _getData("getLateFees");
+  static Future<dynamic> getMeetings() => _getData("getMeetings");
 }
