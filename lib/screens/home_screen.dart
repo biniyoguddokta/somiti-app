@@ -118,10 +118,12 @@ class HomeContentState extends State<HomeContent> {
   String userRole = "Member";
   bool _isLoadingStats = true;
   
+  // মোট সম্পদ
   bool _isBalanceVisible = false;
   double totalAssets = 0.0;
   Timer? _balanceTimer;
 
+  // ভাষা পরিবর্তন
   bool isBengali = true;
 
   double cashInHand = 0.0;
@@ -129,7 +131,9 @@ class HomeContentState extends State<HomeContent> {
   double todayExpense = 0.0;
   int totalTransactions = 0;
   List<dynamic> recentTransactions = [];
-  String latestNotice = "অ্যাপে স্বাগতম! নতুন আপডেট পেতে চোখ রাখুন।";
+  
+  // 🔥 নোটিশ আপডেট করা হলো
+  String latestNotice = "বিনিয়োগ উদ্যেক্তা অ্যাপে স্বাগতম! নতুন আপডেট পেতে চোখ রাখুন।";
 
   final List<String> banners = [
     'assets/banner1.png',
@@ -195,14 +199,20 @@ class HomeContentState extends State<HomeContent> {
         String dateStr = tx['Date'].toString();
         String status = tx['Status']?.toString() ?? 'Paid';
 
+        // 🔥 মোট সম্পদ হিসাব (জমা + আয়) - (বিনিয়োগ + খরচ)
         if (status == 'Paid') {
-          if (type == 'জমা' || type == 'আয়' || type == 'বিনিয়োগ') tempTotalAssets += amount;
-          else if (type == 'খরচ') tempTotalAssets -= amount;
+          if (type == 'জমা' || type == 'আয়') {
+             tempTotalAssets += amount;
+          } else if (type == 'বিনিয়োগ' || type == 'খরচ') {
+             tempTotalAssets -= amount;
+          }
         }
 
+        // হাতে নগদ হিসাব
         if (type == 'জমা' || type == 'আয়' || type == 'বিনিয়োগ') tempCash += amount;
         else if (type == 'খরচ') tempCash -= amount;
 
+        // আজকের হিসাব
         if (dateStr.contains(todayDate)) {
           if (type == 'জমা') tempTodayDeposit += amount;
           if (type == 'খরচ') tempTodayExpense += amount;
@@ -240,7 +250,7 @@ class HomeContentState extends State<HomeContent> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // টপ বার
+            // ১. টপ বার
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
               child: Row(
@@ -253,11 +263,12 @@ class HomeContentState extends State<HomeContent> {
                     ),
                   ),
                   
+                  // মোট সম্পদ (৩ সেকেন্ড টাইমারসহ)
                   GestureDetector(
                     onTap: _toggleBalance,
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 300),
-                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 35, vertical: 10),
                       decoration: BoxDecoration(
                         color: _isBalanceVisible ? Colors.white : Colors.grey.shade200, 
                         borderRadius: BorderRadius.circular(25),
@@ -286,19 +297,19 @@ class HomeContentState extends State<HomeContent> {
               ),
             ),
             
-            // 🔥 ব্যানার ফিক্স (ডান পাশে জায়গা নেই)
+            // ২. স্লাইডিং ব্যানার
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15),
               child: SizedBox(
                 height: 180,
-                width: double.infinity, // পুরো জায়গা নেবে
+                width: double.infinity,
                 child: CarouselSlider(
                   carouselController: _carouselController,
                   options: CarouselOptions(
                     autoPlay: true, 
                     autoPlayInterval: const Duration(seconds: 3), 
-                    enlargeCenterPage: false, // মাঝখানে বড় হবে না, পুরো জুড়ে থাকবে
-                    viewportFraction: 1.0, // ১০০% জায়গা নেবে
+                    enlargeCenterPage: false, 
+                    viewportFraction: 1.0, 
                     padEnds: false,
                     onPageChanged: (index, reason) => setState(() => _currentBanner = index),
                   ),
@@ -311,7 +322,7 @@ class HomeContentState extends State<HomeContent> {
                         borderRadius: BorderRadius.circular(15), 
                         child: Image.asset(
                           bannerUrl, 
-                          fit: BoxFit.fill, // ছবি টেনে পুরো জায়গা ভরাট করবে
+                          fit: BoxFit.fill, 
                           errorBuilder: (c, e, s) => Container(color: Colors.grey.shade300, child: const Center(child: Icon(Icons.image)))
                         )
                       ),
@@ -322,7 +333,7 @@ class HomeContentState extends State<HomeContent> {
             ),
             const SizedBox(height: 10),
             
-            // নোটিশ
+            // ৩. নোটিশ স্ক্রল
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
               padding: const EdgeInsets.symmetric(vertical: 8),
@@ -352,23 +363,24 @@ class HomeContentState extends State<HomeContent> {
               ),
             ),
 
-            // লাল বক্স
+            // ৪. লাল বক্স (আরও ছোট করা হলো)
             InkWell(
               onTap: () {
                 Navigator.push(context, MaterialPageRoute(builder: (c) => const DueListScreen()));
               },
               child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-                padding: const EdgeInsets.all(15),
+                margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 5), // মার্জিন কমানো হলো
+                padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10), // প্যাডিং কমানো হলো
                 decoration: BoxDecoration(color: const Color(0xFFE53935), borderRadius: BorderRadius.circular(15)),
                 child: Row(
                   children: const [
-                    Icon(Icons.lock_clock, color: Colors.white, size: 35), SizedBox(width: 15),
+                    Icon(Icons.lock_clock, color: Colors.white, size: 28), // আইকন ছোট
+                    SizedBox(width: 15),
                     Expanded(child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text("সদস্য যাদের জমা বকেয়া আছে", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                        SizedBox(height: 5), Text("বকেয়া গুলো দেখতে ট্যাপ করুন", style: TextStyle(color: Colors.white70, fontSize: 14)),
+                        Text("সদস্য যাদের জমা বকেয়া আছে", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                        SizedBox(height: 3), Text("বকেয়া গুলো দেখতে ট্যাপ করুন", style: TextStyle(color: Colors.white70, fontSize: 12)),
                       ],
                     )),
                     Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
@@ -377,9 +389,9 @@ class HomeContentState extends State<HomeContent> {
               ),
             ),
 
-            // শুভেচ্ছা
+            // ৫. শুভেচ্ছা
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 15),
+              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
               child: Row(children: [
                 Text("${getGreeting()}, ", style: const TextStyle(fontSize: 16, color: Colors.grey)),
                 Text("$userName ", style: const TextStyle(fontSize: 16, color: Colors.blue, fontWeight: FontWeight.bold)),
@@ -388,7 +400,7 @@ class HomeContentState extends State<HomeContent> {
             const Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("বিনিয়োগ উদ্যোক্তা", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold))),
             const SizedBox(height: 20),
             
-            // ৪টি কার্ড
+            // ৬. ৪টি কার্ড
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15),
               child: _isLoadingStats 
@@ -405,7 +417,7 @@ class HomeContentState extends State<HomeContent> {
             ),
             const SizedBox(height: 20),
             
-            // অ্যাকশন বাটন
+            // ৭. ৪টি অ্যাকশন বাটন
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15),
               child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
@@ -417,7 +429,7 @@ class HomeContentState extends State<HomeContent> {
             ),
             const SizedBox(height: 30),
             
-            // মডিউল ও ফিচার
+            // ৮. মডিউল ও ফিচার
             const Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("মডিউল ও ফিচার", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey))),
             const SizedBox(height: 15),
             Padding(
@@ -447,7 +459,7 @@ class HomeContentState extends State<HomeContent> {
             ),
             const SizedBox(height: 30),
 
-            // সাম্প্রতিক লেনদেন
+            // ৯. সাম্প্রতিক লেনদেন
             const Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("সাম্প্রতিক লেনদেন", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey))),
             const SizedBox(height: 15),
             Padding(
@@ -476,7 +488,7 @@ class HomeContentState extends State<HomeContent> {
             ),
             const SizedBox(height: 30),
 
-            // SMS, চার্ট, সেটিংস
+            // ================= SMS, চার্ট ও সেটিংস =================
             const Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("SMS", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey))),
             const SizedBox(height: 15),
             Padding(
@@ -544,7 +556,7 @@ class HomeContentState extends State<HomeContent> {
             ),
             const SizedBox(height: 30),
 
-            // ভাষা পরিবর্তন
+            // 🔥 ভাষা পরিবর্তন (সবার শেষে)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
               child: Container(
@@ -560,6 +572,9 @@ class HomeContentState extends State<HomeContent> {
                       isSelected: [isBengali, !isBengali],
                       onPressed: (index) {
                         setState(() { isBengali = index == 0; });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(isBengali ? "ভাষা পরিবর্তন করা হচ্ছে..." : "Changing language..."), duration: const Duration(seconds: 1))
+                        );
                       },
                       children: const [
                         Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("বাংলা")),
@@ -577,7 +592,8 @@ class HomeContentState extends State<HomeContent> {
     );
   }
 
-  // কাস্টম উইজেটসমূহ
+  // ================= কাস্টম উইজেটসমূহ =================
+
   Widget _buildInfoCard(String title, String amount, IconData icon, Color color, bool isDark) {
     return Container(
       height: 100, padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 5),
@@ -634,12 +650,11 @@ class HomeContentState extends State<HomeContent> {
     ]);
   }
 
-  // 🔥 ক্লিকেবল সেটিংস কার্ড
   Widget _buildSettingsCard(IconData icon, String title, String subtitle, Color color, bool isDark, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
       child: Container(
-        height: 80, // সমান সাইজের জন্য ফিক্সড হাইট
+        height: 80,
         padding: const EdgeInsets.all(15),
         decoration: BoxDecoration(
           color: isDark ? Colors.grey[800] : Colors.white, 
