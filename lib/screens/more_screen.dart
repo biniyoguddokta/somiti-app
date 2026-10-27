@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
-import '../main.dart'; // themeNotifier
+import '../main.dart'; 
 import 'login_screen.dart';
 import 'app_settings_screen.dart';
-import 'video_tutorial_screen.dart';
 
 class MoreScreen extends StatefulWidget {
   const MoreScreen({super.key});
@@ -24,10 +23,7 @@ class _MoreScreenState extends State<MoreScreen> {
   int activeProjects = 0;
 
   @override
-  void initState() { 
-    super.initState(); 
-    _loadData(); 
-  }
+  void initState() { super.initState(); _loadData(); }
 
   void _loadData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -58,22 +54,11 @@ class _MoreScreenState extends State<MoreScreen> {
       for (var inv in invRes) {
         double profit = double.tryParse(inv['ProfitAmount'].toString()) ?? 0.0;
         double amount = double.tryParse(inv['InvestAmount'].toString()) ?? 0.0;
-        
         tempProfit += profit;
-        if (inv['Status'] == 'সক্রিয়') {
-          tempActive++;
-          tempInv += amount; 
-        }
+        if (inv['Status'] == 'সক্রিয়') { tempActive++; tempInv += amount; }
       }
-      setState(() {
-        totalProfit = tempProfit;
-        totalInvestment = tempInv;
-        activeProjects = tempActive;
-        isLoadingStats = false;
-      });
-    } else {
-      setState(() => isLoadingStats = false);
-    }
+      setState(() { totalProfit = tempProfit; totalInvestment = tempInv; activeProjects = tempActive; isLoadingStats = false; });
+    } else { setState(() => isLoadingStats = false); }
   }
 
   void _logout() async {
@@ -83,23 +68,56 @@ class _MoreScreenState extends State<MoreScreen> {
     Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const LoginScreen()), (route) => false);
   }
 
+  void _showPinChangeDialog() {
+    TextEditingController oldPinController = TextEditingController();
+    TextEditingController newPinController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("পিন পরিবর্তন করুন"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: oldPinController, obscureText: true, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "পুরোনো পিন")),
+            const SizedBox(height: 10),
+            TextField(controller: newPinController, obscureText: true, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "নতুন পিন")),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("বাতিল")),
+          ElevatedButton(
+            onPressed: () async {
+              if (oldPinController.text.isNotEmpty && newPinController.text.isNotEmpty) {
+                var res = await ApiService.updatePin(phone: phone, newPin: newPinController.text.trim());
+                if (res['status'] == 'success') {
+                  if (!mounted) return;
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("পিন সফলভাবে আপডেট হয়েছে!"), backgroundColor: Colors.green));
+                } else {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res['message'] ?? "সমস্যা"), backgroundColor: Colors.red));
+                }
+              }
+            },
+            child: const Text("সেভ"),
+          )
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     bool isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF5F7FA),
-      // 🔥 ৪ নং স্ক্রিনশটের মতো ডিজাইন শুরু
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // সবুজ হেডার
             Container(
               padding: const EdgeInsets.fromLTRB(20, 50, 20, 30),
-              decoration: const BoxDecoration(
-                color: Color(0xFF00796B),
-                borderRadius: BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20))
-              ),
+              decoration: const BoxDecoration(color: Color(0xFF00796B), borderRadius: BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20))),
               child: Row(
                 children: [
                   const CircleAvatar(radius: 30, backgroundColor: Colors.white, child: Icon(Icons.person, size: 35, color: Color(0xFF00796B))),
@@ -115,64 +133,46 @@ class _MoreScreenState extends State<MoreScreen> {
                 ],
               ),
             ),
-
-            // ওভারল্যাপিং স্ট্যাটস কার্ড
             Transform.translate(
               offset: const Offset(0, -15),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 15),
-                child: isLoadingStats 
-                  ? const Center(child: CircularProgressIndicator())
-                  : Column(
-                      children: [
-                        // মোট বিনিয়োগ কার্ড
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(color: const Color(0xFF00796B), borderRadius: BorderRadius.circular(15)),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: isLoadingStats ? const Center(child: CircularProgressIndicator()) : Column(
+                  children: [
+                    Container(
+                      width: double.infinity, padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(color: const Color(0xFF00796B), borderRadius: BorderRadius.circular(15)),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text("মোট বিনিয়োগ", style: TextStyle(color: Colors.white70, fontSize: 14)),
-                                  const SizedBox(height: 5),
-                                  Text(_showInvestment ? "৳ ${totalInvestment.toStringAsFixed(0)}" : "৳ ******", style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                                ],
-                              ),
-                              IconButton(
-                                icon: Icon(_showInvestment ? Icons.visibility : Icons.visibility_off, color: Colors.white),
-                                onPressed: () => setState(() => _showInvestment = !_showInvestment),
-                              )
+                              const Text("মোট বিনিয়োগ", style: TextStyle(color: Colors.white70, fontSize: 14)),
+                              const SizedBox(height: 5),
+                              Text(_showInvestment ? "৳ ${totalInvestment.toStringAsFixed(0)}" : "৳ ******", style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
                             ],
                           ),
-                        ),
-                        const SizedBox(height: 15),
-                        
-                        // ৩টি ছোট কার্ড
-                        Row(
-                          children: [
-                            Expanded(child: _buildStatCard("মোট লাভ", "৳ ${totalProfit.toStringAsFixed(0)}", Icons.trending_up, Colors.green, isDark)),
-                            const SizedBox(width: 10),
-                            Expanded(child: _buildStatCard("মোট জমা", "৳ ${totalDeposit.toStringAsFixed(0)}", Icons.account_balance_wallet, Colors.teal, isDark)),
-                            const SizedBox(width: 10),
-                            Expanded(child: _buildStatCard("সক্রিয় প্রকল্প", "$activeProjects টি", Icons.layers, Colors.orange, isDark)),
-                          ],
-                        ),
+                          IconButton(icon: Icon(_showInvestment ? Icons.visibility : Icons.visibility_off, color: Colors.white), onPressed: () => setState(() => _showInvestment = !_showInvestment))
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    Row(
+                      children: [
+                        Expanded(child: _buildStatCard("মোট লাভ", "৳ ${totalProfit.toStringAsFixed(0)}", Icons.trending_up, Colors.green, isDark)),
+                        const SizedBox(width: 10),
+                        Expanded(child: _buildStatCard("মোট জমা", "৳ ${totalDeposit.toStringAsFixed(0)}", Icons.account_balance_wallet, Colors.teal, isDark)),
+                        const SizedBox(width: 10),
+                        Expanded(child: _buildStatCard("সক্রিয় প্রকল্প", "$activeProjects টি", Icons.layers, Colors.orange, isDark)),
                       ],
                     ),
+                  ],
+                ),
               ),
             ),
-
-            // মেনু অপশনগুলো
-            _buildMenuTile(Icons.notifications_none, "নোটিফিকেশন সেটিংস", () {
-              Navigator.push(context, MaterialPageRoute(builder: (c) => const AppSettingsScreen()));
-            }),
-            _buildMenuTile(Icons.security, "সুরক্ষা ও গোপনীয়তা (পিন)", () {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("পিন আপডেট ফিচারটি পরবর্তী আপডেটে আসছে")));
-            }),
-            
+            _buildMenuTile(Icons.notifications_none, "নোটিফিকেশন সেটিংস", () { Navigator.push(context, MaterialPageRoute(builder: (c) => const AppSettingsScreen())); }),
+            _buildMenuTile(Icons.security, "সুরক্ষা ও গোপনীয়তা (পিন)", _showPinChangeDialog),
             SwitchListTile(
               secondary: const Icon(Icons.dark_mode, color: Colors.blueGrey),
               title: const Text("ডার্ক মোড", style: TextStyle(fontWeight: FontWeight.w500)),
@@ -184,26 +184,11 @@ class _MoreScreenState extends State<MoreScreen> {
                 await prefs.setBool('isDarkMode', val);
               },
             ),
-
-            _buildMenuTile(Icons.play_circle_fill, "ভিডিও টিউটোরিয়াল", () {
-              Navigator.push(context, MaterialPageRoute(builder: (c) => const VideoTutorialScreen()));
-            }),
             _buildMenuTile(Icons.info_outline, "অ্যাপ সম্পর্কে", () {
-              showAboutDialog(
-                context: context,
-                applicationName: "বিনিয়োগ উদ্যোক্তা",
-                applicationVersion: "1.0.0",
-                children: [const Text("সমিতির সব হিসাব এক অ্যাপে।")]
-              );
+              showAboutDialog(context: context, applicationName: "বিনিয়োগ উদ্যোক্তা", applicationVersion: "1.0.0", children: [const Text("সমিতির সব হিসাব এক অ্যাপে।")]);
             }),
-            
             const SizedBox(height: 20),
-            
-            ListTile(
-              leading: const Icon(Icons.logout, color: Colors.red),
-              title: const Text("লগআউট", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-              onTap: _logout,
-            ),
+            ListTile(leading: const Icon(Icons.logout, color: Colors.red), title: const Text("লগআউট", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)), onTap: _logout),
             const SizedBox(height: 40),
           ],
         ),
@@ -214,17 +199,11 @@ class _MoreScreenState extends State<MoreScreen> {
   Widget _buildStatCard(String title, String value, IconData icon, Color color, bool isDark) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.grey[800] : Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5)]
-      ),
+      decoration: BoxDecoration(color: isDark ? Colors.grey[800] : Colors.white, borderRadius: BorderRadius.circular(15), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5)]),
       child: Column(
         children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 8),
-          Text(title, style: const TextStyle(color: Colors.grey, fontSize: 10)),
-          const SizedBox(height: 4),
+          Icon(icon, color: color, size: 24), const SizedBox(height: 8),
+          Text(title, style: const TextStyle(color: Colors.grey, fontSize: 10)), const SizedBox(height: 4),
           FittedBox(child: Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 14))),
         ],
       ),
@@ -232,11 +211,6 @@ class _MoreScreenState extends State<MoreScreen> {
   }
 
   Widget _buildMenuTile(IconData icon, String title, VoidCallback onTap) {
-    return ListTile(
-      leading: Icon(icon, color: Colors.blueGrey),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
-      trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-      onTap: onTap,
-    );
+    return ListTile(leading: Icon(icon, color: Colors.blueGrey), title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)), trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey), onTap: onTap);
   }
 }
