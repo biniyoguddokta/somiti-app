@@ -14,8 +14,7 @@ class AddTransactionScreen extends StatefulWidget {
 class _AddTransactionScreenState extends State<AddTransactionScreen> {
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
-  final _dateController = TextEditingController(); // নতুন ডেট ফিল্ড
-  
+  final _dateController = TextEditingController();
   bool _isLoading = false;
   String _status = "Paid"; 
   
@@ -28,7 +27,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   @override
   void initState() {
     super.initState();
-    // আজকের তারিখ ডিফল্ট সেট করা হলো
     _dateController.text = DateFormat('yyyy-MM-dd').format(DateTime.now());
     _loadUserData();
   }
@@ -50,21 +48,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     }
   }
 
-  // ডেট পিকার ফাংশন
   Future<void> _pickDate() async {
     DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(primary: Color(0xFF00796B)),
-          ),
-          child: child!,
-        );
-      },
     );
     if (pickedDate != null) {
       setState(() {
@@ -89,7 +78,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       note: note, 
       memberName: _selectedMember!, 
       status: _status, 
-      date: _dateController.text, // ডেট পাঠানো হলো
+      date: _dateController.text, 
     );
     
     setState(() => _isLoading = false);
@@ -131,7 +120,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               ),
               const SizedBox(height: 20),
 
-              // 🔥 ডেট সিলেক্ট অপশন
               TextField(
                 controller: _dateController,
                 readOnly: true,
