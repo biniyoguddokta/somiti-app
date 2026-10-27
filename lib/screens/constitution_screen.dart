@@ -32,11 +32,7 @@ class _ConstitutionScreenState extends State<ConstitutionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
-      appBar: AppBar(
-        title: const Text("গঠনতন্ত্র"),
-        backgroundColor: const Color(0xFF00796B),
-        foregroundColor: Colors.white,
-      ),
+      appBar: AppBar(title: const Text("গঠনতন্ত্র"), backgroundColor: const Color(0xFF00796B), foregroundColor: Colors.white),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : pages.isEmpty
@@ -50,38 +46,23 @@ class _ConstitutionScreenState extends State<ConstitutionScreen> {
                       color: Colors.white,
                       margin: const EdgeInsets.only(bottom: 15),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15), side: BorderSide(color: Colors.grey.shade200)),
-                      child: ListTile(
+                      child: ExpansionTile(
                         leading: Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(color: Colors.teal.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
                           child: const Icon(Icons.menu_book, color: Color(0xFF00796B)),
                         ),
                         title: Text(page['Title'].toString(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                        trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-                        onTap: () {
-                          Navigator.push(context, MaterialPageRoute(builder: (c) => ConstitutionDetailsScreen(title: page['Title'], content: page['Content'])));
-                        },
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(15.0),
+                            child: Text(page['Content'].toString(), style: const TextStyle(height: 1.5, fontSize: 15)),
+                          )
+                        ],
                       ),
                     );
                   },
                 ),
-    );
-  }
-}
-
-class ConstitutionDetailsScreen extends StatelessWidget {
-  final String title;
-  final String content;
-  const ConstitutionDetailsScreen({super.key, required this.title, required this.content});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title), backgroundColor: const Color(0xFF00796B), foregroundColor: Colors.white),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: SingleChildScrollView(child: Text(content, style: const TextStyle(fontSize: 16, height: 1.5))),
-      ),
     );
   }
 }
