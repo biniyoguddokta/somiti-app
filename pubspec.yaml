@@ -1,5 +1,5 @@
 name: somiti_app
-description: A new Flutter project for Somiti App.
+description: A new Flutter project.
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -15,14 +15,21 @@ dependencies:
   shared_preferences: 2.2.2 
   intl: ^0.18.1
   fl_chart: ^0.65.0
-  marquee: ^2.2.3 # নোটিশ স্ক্রল করার জন্য
+  marquee: ^2.2.3
+  youtube_player_flutter: ^8.1.2 # ভিডিও প্লেয়ারের জন্য
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^2.0.0
+  flutter_launcher_icons: ^0.13.1 # অ্যাপ আইকনের জন্য
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: false
+  image_path: "assets/app_logo.png" # আপনার লোগোর নাম
 
 flutter:
   uses-material-design: true
   assets:
-    - assets/ # 🔥 আপনার ব্যানারগুলোর জন্য চালু করা হলো
+    - assets/ # 🔥 এখানে আপনার সব ছবি (ব্যানার, লোগো) থাকবে
