@@ -30,33 +30,21 @@ jobs:
     - name: Add Internet Permission
       run: sed -i 's/<application/<uses-permission android:name="android.permission.INTERNET"\/>\n    <application/' android/app/src/main/AndroidManifest.xml
 
-    # 🔥 ১. অ্যাপের নাম পরিবর্তন করার নতুন স্টেপ
-    - name: Change App Name
+    # 🔥 নতুন যোগ করা হলো: ProGuard এরর সমাধানের জন্য
+    - name: Fix R8 ProGuard Issue
       run: |
-        sed -i 's/android:label="somiti_app"/android:label="বিনিয়োগ উদ্যোক্তা"/g' android/app/src/main/AndroidManifest.xml
+        echo "android.r8.proguardAndroidTxt.disallowed=false" >> android/gradle.properties
 
-    # ২. ProGuard রুলস ফাইল তৈরি করা হচ্ছে
-    - name: Create ProGuard Rules
-      run: |
-        mkdir -p android/app
-        cat << 'EOF' > android/app/proguard-rules.pro
-        -keep class kotlin.Unit { *; }
-        -keep class kotlin.Result { *; }
-        -keep class kotlin.Result$Failure { *; }
-        -keep class kotlin.coroutines.Continuation { *; }
-        -keep class kotlin.coroutines.intrinsics.CoroutineSingletons { *; }
-        -keep class kotlin.coroutines.intrinsics.IntrinsicsKt { *; }
-        EOF
-
-    # ৩. build.gradle ফাইলে proguard-rules.pro যুক্ত করা হচ্ছে
-    - name: Configure ProGuard in build.gradle
+    - name: Disable R8 Minification
       run: |
         if [ -f android/app/build.gradle.kts ]; then
           echo "Configuring build.gradle.kts..."
-          sed -i 's/release {/release {\n            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")/' android/app/build.gradle.kts
+          sed -i 's/isMinifyEnabled true/isMinifyEnabled false/g' android/app/build.gradle.kts
+          sed -i 's/isShrinkResources true/isShrinkResources false/g' android/app/build.gradle.kts
         elif [ -f android/app/build.gradle ]; then
           echo "Configuring build.gradle..."
-          sed -i 's/release {/release {\n            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"/' android/app/build.gradle
+          sed -i 's/minifyEnabled true/minifyEnabled false/g' android/app/build.gradle
+          sed -i 's/shrinkResources true/shrinkResources false/g' android/app/build.gradle
         fi
 
     - name: Build APK
