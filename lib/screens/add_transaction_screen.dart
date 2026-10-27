@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 
 class AddTransactionScreen extends StatefulWidget {
@@ -13,18 +14,22 @@ class AddTransactionScreen extends StatefulWidget {
 class _AddTransactionScreenState extends State<AddTransactionScreen> {
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
+  final _dateController = TextEditingController(); // নতুন ডেট ফিল্ড
+  
   bool _isLoading = false;
   String _status = "Paid"; 
   
   String userName = "";
   String userRole = "";
-  String? _selectedMember; // ড্রপডাউনের জন্য
+  String? _selectedMember;
   List<dynamic> members = [];
   bool _isFetchingMembers = true;
 
   @override
   void initState() {
     super.initState();
+    // আজকের তারিখ ডিফল্ট সেট করা হলো
+    _dateController.text = DateFormat('yyyy-MM-dd').format(DateTime.now());
     _loadUserData();
   }
 
@@ -34,21 +39,36 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     userRole = prefs.getString('userRole') ?? "Member";
 
     if (userRole == 'Admin') {
-      // অ্যাডমিন হলে সদস্যদের লিস্ট আনবে
       var res = await ApiService.getAllMembers();
       if (res is List) {
-        setState(() {
-          members = res;
-          _isFetchingMembers = false;
-        });
+        setState(() { members = res; _isFetchingMembers = false; });
       } else {
         setState(() => _isFetchingMembers = false);
       }
     } else {
-      // সাধারণ সদস্য হলে তার নিজের নামই সেট হবে
+      setState(() { _selectedMember = userName; _isFetchingMembers = false; });
+    }
+  }
+
+  // ডেট পিকার ফাংশন
+  Future<void> _pickDate() async {
+    DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(primary: Color(0xFF00796B)),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (pickedDate != null) {
       setState(() {
-        _selectedMember = userName;
-        _isFetchingMembers = false;
+        _dateController.text = DateFormat('yyyy-MM-dd').format(pickedDate);
       });
     }
   }
@@ -67,8 +87,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       type: widget.type, 
       amount: amount, 
       note: note, 
-      memberName: _selectedMember!, // ড্রপডাউন থেকে সিলেক্ট করা নাম
+      memberName: _selectedMember!, 
       status: _status, 
+      date: _dateController.text, // ডেট পাঠানো হলো
     );
     
     setState(() => _isLoading = false);
@@ -89,11 +110,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       appBar: AppBar(title: Text("${widget.type} করুন"), backgroundColor: const Color(0xFF00796B), foregroundColor: Colors.white),
       body: _isFetchingMembers 
         ? const Center(child: CircularProgressIndicator())
-        : Padding(
+        : SingleChildScrollView(
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-              // সদস্য সিলেক্ট ড্রপডাউন (শুধু অ্যাডমিন দেখবে)
               if (userRole == 'Admin') ...[
                 DropdownButtonFormField<String>(
                   value: _selectedMember,
@@ -110,6 +130,21 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 decoration: InputDecoration(labelText: "টাকার পরিমাণ (৳)", prefixIcon: const Icon(Icons.money), border: OutlineInputBorder(borderRadius: BorderRadius.circular(15))),
               ),
               const SizedBox(height: 20),
+
+              // 🔥 ডেট সিলেক্ট অপশন
+              TextField(
+                controller: _dateController,
+                readOnly: true,
+                onTap: _pickDate,
+                decoration: InputDecoration(
+                  labelText: "তারিখ", 
+                  prefixIcon: const Icon(Icons.calendar_today), 
+                  suffixIcon: const Icon(Icons.arrow_drop_down),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(15))
+                ),
+              ),
+              const SizedBox(height: 20),
+
               TextField(
                 controller: _noteController,
                 decoration: InputDecoration(labelText: "বিবরণ / নোট (ঐচ্ছিক)", prefixIcon: const Icon(Icons.note), border: OutlineInputBorder(borderRadius: BorderRadius.circular(15))),
