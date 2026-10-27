@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart'; // তারিখের জন্য নতুন ইমপোর্ট
 import '../services/api_service.dart';
 
 class LateFeeScreen extends StatefulWidget {
@@ -46,13 +47,17 @@ class _LateFeeScreenState extends State<LateFeeScreen> {
     }
 
     setState(() => isLoading = true);
+    
+    // 🔥 এখানে date প্যারামিটারটি যুক্ত করা হলো
     var res = await ApiService.addTransaction(
       type: 'বিলম্ব ফী',
       amount: _amountController.text.trim(),
       note: _noteController.text.trim().isEmpty ? 'বিলম্ব ফী' : _noteController.text.trim(),
       memberName: _selectedMember!,
       status: 'Unpaid',
+      date: DateFormat('yyyy-MM-dd').format(DateTime.now()), // আজকের তারিখ
     );
+    
     setState(() => isLoading = false);
 
     if (res['status'] == "success" || (res['status'] == "error" && res['message'].contains("302"))) {
@@ -61,6 +66,9 @@ class _LateFeeScreenState extends State<LateFeeScreen> {
       _fetchData();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("বিলম্ব ফী যোগ হয়েছে!"), backgroundColor: Colors.green));
+    } else {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res['message'] ?? "সমস্যা"), backgroundColor: Colors.red));
     }
   }
 
