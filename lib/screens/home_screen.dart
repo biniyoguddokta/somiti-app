@@ -25,7 +25,7 @@ import 'app_settings_screen.dart';
 import 'entrepreneur_settings_screen.dart';
 import 'video_tutorial_screen.dart';
 import 'guide_screen.dart';
-import 'transaction_history_screen.dart'; // 🔥 নতুন ইমপোর্ট
+import 'transaction_history_screen.dart'; 
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -194,15 +194,16 @@ class HomeContentState extends State<HomeContent> {
         String dateStr = tx['Date'].toString();
         String status = tx['Status']?.toString() ?? 'Paid';
 
+        // 🔥 মোট সম্পদ হিসাব (জমা + আয় + বিলম্ব ফী) - (বিনিয়োগ + খরচ)
         if (status == 'Paid') {
-          if (type == 'জমা' || type == 'আয়') {
+          if (type == 'জমা' || type == 'আয়' || type == 'বিলম্ব ফী') {
              tempTotalAssets += amount;
           } else if (type == 'বিনিয়োগ' || type == 'খরচ') {
              tempTotalAssets -= amount;
           }
         }
 
-        if (type == 'জমা' || type == 'আয়' || type == 'বিনিয়োগ') tempCash += amount;
+        if (type == 'জমা' || type == 'আয়' || type == 'বিনিয়োগ' || type == 'বিলম্ব ফী') tempCash += amount;
         else if (type == 'খরচ') tempCash -= amount;
 
         if (dateStr.contains(todayDate)) {
@@ -403,7 +404,6 @@ class HomeContentState extends State<HomeContent> {
                     const SizedBox(width: 8),
                     Expanded(child: _buildInfoCard("আজকের খরচ", "৳ ${todayExpense.toStringAsFixed(0)}", Icons.arrow_upward, Colors.orange, isDark)),
                     const SizedBox(width: 8),
-                    // 🔥 এখানে ক্লিক করলে হিস্ট্রি পেজে যাবে
                     Expanded(
                       child: InkWell(
                         onTap: () {
@@ -487,7 +487,7 @@ class HomeContentState extends State<HomeContent> {
             ),
             const SizedBox(height: 30),
 
-            // ================= নিচের অংশ =================
+            // ================= নিচের অংশ (SMS, চার্ট ও সেটিংস) =================
             const Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("SMS", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey))),
             const SizedBox(height: 15),
             Padding(
@@ -553,13 +553,45 @@ class HomeContentState extends State<HomeContent> {
               ]),
             ),
             const SizedBox(height: 30),
+
+            // 🔥 ভাষা পরিবর্তন (সবার শেষে)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+              child: Container(
+                padding: const EdgeInsets.all(15),
+                decoration: BoxDecoration(color: isDark ? Colors.grey[800] : Colors.white, borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.grey.shade200)),
+                child: Row(
+                  children: [
+                    const Icon(Icons.translate, color: Color(0xFF00796B)),
+                    const SizedBox(width: 15),
+                    const Expanded(child: Text("অ্যাপের ভাষা", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
+                    ToggleButtons(
+                      borderRadius: BorderRadius.circular(20),
+                      isSelected: [isBengali, !isBengali],
+                      onPressed: (index) {
+                        setState(() { isBengali = index == 0; });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(isBengali ? "ভাষা পরিবর্তন করা হচ্ছে..." : "Changing language..."), duration: const Duration(seconds: 1))
+                        );
+                      },
+                      children: const [
+                        Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("বাংলা")),
+                        Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("English")),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 30),
           ],
         ),
       ),
     );
   }
 
-  // কাস্টম উইজেটসমূহ
+  // ================= কাস্টম উইজেটসমূহ =================
+
   Widget _buildInfoCard(String title, String amount, IconData icon, Color color, bool isDark) {
     return Container(
       height: 100, padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 5),
