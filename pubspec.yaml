@@ -16,21 +16,20 @@ dependencies:
   intl: ^0.18.1
   fl_chart: ^0.65.0
   marquee: ^2.2.3
-  # 🔥 youtube_player_flutter ভার্সন আপগ্রেড করা হলো
   youtube_player_flutter: ^9.0.4 
+  image_picker: ^1.0.7 # 🔥 ছবি তোলার জন্য নতুন যুক্ত হলো
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^2.0.0
-  flutter_launcher_icons: ^0.13.1 
+  flutter_launcher_icons: ^0.13.1
 
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: false
   image_path: "assets/app_logo.png" 
 
-# 🔥 নিশ্চিত করা হলো যেন flutter_inappwebview নতুন ভার্সন ব্যবহার করে
 dependency_overrides:
   flutter_inappwebview: ^6.0.0
 
