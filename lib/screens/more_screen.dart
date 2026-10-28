@@ -66,14 +66,14 @@ class _MoreScreenState extends State<MoreScreen> {
     } else { setState(() => isLoadingStats = false); }
   }
 
-  // 🔥 প্রোফাইল ছবি আপলোড (রিসাইজসহ)
   Future<void> _pickAndUploadProfilePic() async {
     final ImagePicker picker = ImagePicker();
+    // 🔥 ছবির সাইজ আরও ছোট করা হলো
     final XFile? image = await picker.pickImage(
       source: ImageSource.gallery, 
-      imageQuality: 20, // 🔥 ছবি ২০% কোয়ালিটিতে ছোট করা হবে
-      maxWidth: 500,
-      maxHeight: 500,
+      imageQuality: 10, 
+      maxWidth: 200,
+      maxHeight: 200,
     );
     
     if (image != null) {
@@ -85,8 +85,7 @@ class _MoreScreenState extends State<MoreScreen> {
 
       var res = await ApiService.updateProfilePic(phone: phone, base64: base64Data);
       
-      if (res['status'] == "success" || res['message'] == "Updated" || res['message'] == "Success (302)") {
-        // সফল হলে ডেটা রিফ্রেশ করে নতুন ছবি লোড করা
+      if (res['status'] == "success" || res['message'] == "Updated" || res['message'].contains("302")) {
         var members = await ApiService.getAllMembers();
         if (members is List) {
           String cleanPhone = phone.startsWith('0') ? phone.substring(1) : phone;
@@ -168,7 +167,6 @@ class _MoreScreenState extends State<MoreScreen> {
               decoration: const BoxDecoration(color: Color(0xFF00796B), borderRadius: BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20))),
               child: Row(
                 children: [
-                  // 🔥 প্রোফাইল ছবি ও ক্যামেরা আইকন
                   GestureDetector(
                     onTap: _pickAndUploadProfilePic,
                     child: Stack(
