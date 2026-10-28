@@ -67,25 +67,31 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     if (pickedDate != null) setState(() => _dateController.text = DateFormat('yyyy-MM-dd').format(pickedDate));
   }
 
-  Future<void> _pickImage() async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.camera, imageQuality: 50);
-    if (image != null) {
-      File file = File(image.path);
-      List<int> imageBytes = await file.readAsBytes();
-      String base64String = base64Encode(imageBytes);
-      setState(() {
-        _receiptImage = file;
-        _receiptBase64 = "data:image/jpeg;base64,$base64String";
-      });
-    }
-  }
-
   void _submit() async {
     String amount = _amountController.text.trim();
     if (amount.isEmpty || _selectedMember == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("টাকার পরিমাণ এবং সদস্য নির্বাচন করুন"), backgroundColor: Colors.orange));
       return;
+    }
+
+    // 🔥 জমার ক্ষেত্রে মাসে ১ বার চেক করা
+    if (widget.type == "জমা") {
+      setState(() => _isLoading = true);
+      var txRes = await ApiService.getTransactions();
+      if (txRes is List) {
+        String currentMonth = DateFormat('yyyy-MM').format(DateTime.now());
+        bool hasDeposited = txRes.any((tx) => 
+          tx['MemberName'] == _selectedMember && 
+          tx['Type'] == 'জমা' && 
+          tx['Date'].toString().startsWith(currentMonth)
+        );
+        
+        if (hasDeposited) {
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("এই মাসে ইতিমধ্যে জমা দেওয়া হয়েছে!"), backgroundColor: Colors.red));
+          return;
+        }
+      }
     }
 
     setState(() => _isLoading = true);
@@ -102,7 +108,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     
     setState(() => _isLoading = false);
 
-    if (response['status'] == "success" || response['message'] == "Success" || response['message'] == "Saved") {
+    if (response['status'] == "success" || response['message'] == "Success" || response['message'] == "Saved" || response['message'].contains("302")) {
       if (!mounted) return;
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("সফলভাবে সেভ হয়েছে!"), backgroundColor: Colors.green));
@@ -173,20 +179,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               ),
               const SizedBox(height: 20),
               
-              if (widget.type == "জমা") ...[
-                GestureDetector(
-                  onTap: _pickImage,
-                  child: Container(
-                    height: 100, width: double.infinity,
-                    decoration: BoxDecoration(border: Border.all(color: Colors.grey), borderRadius: BorderRadius.circular(15), color: Colors.grey[200]),
-                    child: _receiptImage != null
-                        ? ClipRRect(borderRadius: BorderRadius.circular(15), child: Image.file(_receiptImage!, fit: BoxFit.cover))
-                        : const Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.camera_alt, size: 40, color: Colors.grey), Text("রশিদের ছবি তুলুন (ঐচ্ছিক)", style: TextStyle(color: Colors.grey))])),
-                  ),
-                ),
-                const SizedBox(height: 20),
-              ],
-
               SizedBox(
                 width: double.infinity, height: 50,
                 child: ElevatedButton(
