@@ -22,7 +22,6 @@ class _DueListScreenState extends State<DueListScreen> {
   void _fetchDues() async {
     setState(() => isLoading = true);
     
-    // 🔥 সদস্য এবং লেনদেন দুটোই আনতে হবে
     var membersRes = await ApiService.getAllMembers();
     var txRes = await ApiService.getTransactions();
     
@@ -32,7 +31,6 @@ class _DueListScreenState extends State<DueListScreen> {
       List<String> paidMembers = [];
       List<dynamic> explicitUnpaid = [];
 
-      // কে কে এই মাসে টাকা দিয়েছে এবং কোন কোন ট্রানজেকশন Unpaid আছে তা বের করা
       for (var tx in txRes) {
         String txName = tx['MemberName'].toString().trim();
         String txType = tx['Type'].toString();
@@ -48,24 +46,23 @@ class _DueListScreenState extends State<DueListScreen> {
         }
       }
 
-      // যারা এই মাসে জমা দেয়নি তাদের খুঁজে বের করা
       List<dynamic> tempPending = [];
       
+      // যারা এই মাসে জমা দেয়নি
       for (var mem in membersRes) {
         String mName = mem['Name'].toString().trim();
-        // যদি এই মাসে না দিয়ে থাকে, তবে তাকে লিস্টে যোগ করা হবে
         if (!paidMembers.contains(mName)) {
           tempPending.add({
             "type": "মাসিক চাঁদা",
             "name": mName,
             "amount": "2000",
             "date": currentMonth,
-            "rowIndex": "" // সরাসরি পরিশোধ করা যাবে না, আগে বকেয়া তৈরি করতে হবে
+            "rowIndex": "" 
           });
         }
       }
 
-      // যাদের সরাসরি Unpaid (বিলম্ব ফী/বকেয়া) এন্ট্রি আছে তাদের যোগ করা
+      // যাদের সরাসরি Unpaid এন্ট্রি আছে
       for (var unpaid in explicitUnpaid) {
          tempPending.add({
             "type": unpaid['Type'].toString(),
@@ -87,7 +84,6 @@ class _DueListScreenState extends State<DueListScreen> {
 
   void _payDue(String rowIndex, String amount, String memberName, String type) async {
     if (rowIndex.isEmpty) {
-      // যদি সরাসরি Unpaid এন্ট্রি না থাকে (মানে সে এই মাসে দেয়নি), তবে নতুন বকেয়া+পেমেন্ট তৈরি করতে হবে
       setState(() => isLoading = true);
       await ApiService.addTransaction(
         type: 'জমা', 
@@ -102,7 +98,6 @@ class _DueListScreenState extends State<DueListScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("পরিশোধ সফল হয়েছে!"), backgroundColor: Colors.green));
     } else {
-      // যদি আগে থেকেই Unpaid থাকে (বিলম্ব ফী)
       setState(() => isLoading = true);
       var res = await ApiService.updateTransactionStatus(rowIndex: rowIndex, status: 'Paid');
       
