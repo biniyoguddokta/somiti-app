@@ -201,26 +201,39 @@ class HomeContentState extends State<HomeContent> {
         String fullDateStr = tx['Date'].toString();
         String formattedTxDate = fullDateStr.length >= 10 ? fullDateStr.substring(0, 10) : fullDateStr;
         String status = tx['Status']?.toString() ?? 'Paid';
+        String paymentMethod = tx['PaymentMethod']?.toString() ?? 'HAND CASH';
 
+        // মোট সম্পদ হিসাব
         if (status == 'Paid') {
           if (type == 'জমা' || type == 'আয়' || type == 'বিলম্ব ফী') tempTotalAssets += amount;
           else if (type == 'বিনিয়োগ' || type == 'খরচ') tempTotalAssets -= amount;
         }
 
-        if (type == 'জমা' || type == 'আয়' || type == 'বিনিয়োগ' || type == 'বিলম্ব ফী') tempCash += amount;
-        else if (type == 'খরচ') tempCash -= amount;
+        // 🔥 হাতে নগদ হিসাব (শুধু HAND CASH হলেই যোগ হবে)
+        if (status == 'Paid') {
+          if (type == 'জমা' || type == 'আয়' || type == 'বিলম্ব ফী') {
+            if (paymentMethod == 'HAND CASH') {
+              tempCash += amount;
+            }
+          } else if (type == 'খরচ') {
+            tempCash -= amount; 
+          }
+        }
 
+        // 🔥 আজকের জমা ও খরচ (যেকোনো পেমেন্ট মেথড, যদি তারিখ আজকের হয়)
         if (formattedTxDate == todayDate && status == 'Paid') {
           if (type == 'জমা') tempTodayDeposit += amount;
           if (type == 'খরচ') tempTodayExpense += amount;
         }
 
+        // 🔥 এই মাসের আদায় ও কে কে জমা দিয়েছে
         if (fullDateStr.contains(currentMonth) && type == 'জমা' && status == 'Paid') {
           tempMonthCollection += amount;
           membersWhoPaid.add(tx['MemberName'].toString().trim());
         }
       }
 
+      // 🔥 কতজন জমা দেয়নি
       int tempPendingCount = 0;
       if (membersRes is List) {
         for (var mem in membersRes) {
@@ -264,7 +277,7 @@ class HomeContentState extends State<HomeContent> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // টপ বার
+            // ১. টপ বার
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
               child: Row(
@@ -310,7 +323,7 @@ class HomeContentState extends State<HomeContent> {
               ),
             ),
             
-            // ব্যানার
+            // ২. ব্যানার
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15),
               child: SizedBox(
@@ -346,7 +359,7 @@ class HomeContentState extends State<HomeContent> {
             ),
             const SizedBox(height: 10),
             
-            // নোটিশ
+            // ৩. নোটিশ
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
               padding: const EdgeInsets.symmetric(vertical: 8),
@@ -376,7 +389,7 @@ class HomeContentState extends State<HomeContent> {
               ),
             ),
 
-            // লাল বক্স
+            // ৪. লাল বক্স
             InkWell(
               onTap: () {
                 Navigator.push(context, MaterialPageRoute(builder: (c) => const DueListScreen()));
@@ -403,7 +416,7 @@ class HomeContentState extends State<HomeContent> {
               ),
             ),
 
-            // শুভেচ্ছা
+            // ৫. শুভেচ্ছা
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
               child: Row(children: [
@@ -414,7 +427,7 @@ class HomeContentState extends State<HomeContent> {
             const Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("বিনিয়োগ উদ্যোক্তা", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold))),
             const SizedBox(height: 20),
             
-            // ৪টি কার্ড
+            // ৬. ৪টি কার্ড
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15),
               child: _isLoadingStats 
@@ -438,7 +451,7 @@ class HomeContentState extends State<HomeContent> {
             ),
             const SizedBox(height: 20),
             
-            // 🔥 ৪টি অ্যাকশন বাটন (শুধু অ্যাডমিন দেখবে)
+            // ৭. ৪টি অ্যাকশন বাটন (শুধু অ্যাডমিন দেখবে)
             if (userRole == 'Admin') ...[
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 15),
@@ -452,7 +465,7 @@ class HomeContentState extends State<HomeContent> {
               const SizedBox(height: 30),
             ],
             
-            // মডিউল ও ফিচার
+            // ৮. মডিউল ও ফিচার
             const Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("মডিউল ও ফিচার", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey))),
             const SizedBox(height: 15),
             Padding(
@@ -482,7 +495,7 @@ class HomeContentState extends State<HomeContent> {
             ),
             const SizedBox(height: 30),
 
-            // সাম্প্রতিক লেনদেন
+            // ৯. সাম্প্রতিক লেনদেন
             const Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("সাম্প্রতিক লেনদেন", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey))),
             const SizedBox(height: 15),
             Padding(
@@ -511,7 +524,7 @@ class HomeContentState extends State<HomeContent> {
             ),
             const SizedBox(height: 30),
 
-            // চার্ট ও সেটিংস
+            // ================= নিচের অংশ (SMS, চার্ট ও সেটিংস) =================
             const Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("SMS", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey))),
             const SizedBox(height: 15),
             Padding(
@@ -525,6 +538,7 @@ class HomeContentState extends State<HomeContent> {
             ),
             const SizedBox(height: 30),
 
+            // চার্ট ও বিশ্লেষণ
             const Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("চার্ট ও বিশ্লেষণ", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey))),
             const SizedBox(height: 15),
             Padding(
@@ -624,7 +638,8 @@ class HomeContentState extends State<HomeContent> {
     );
   }
 
-  // কাস্টম উইজেটসমূহ
+  // ================= কাস্টম উইজেটসমূহ =================
+
   Widget _buildInfoCard(String title, String amount, IconData icon, Color color, bool isDark) {
     return Container(
       height: 100, padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 5),
