@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // তারিখের জন্য
+import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 
 class DueListScreen extends StatefulWidget {
@@ -24,7 +24,6 @@ class _DueListScreenState extends State<DueListScreen> {
     var response = await ApiService.getTransactions();
     if (response is List) {
       setState(() {
-        // শুধু বকেয়া এবং Unpaid গুলো ফিল্টার করা
         dueList = response.where((tx) => tx['Type'] == 'বকেয়া' && tx['Status'] == 'Unpaid').toList();
         isLoading = false;
       });
@@ -35,18 +34,19 @@ class _DueListScreenState extends State<DueListScreen> {
 
   void _payDue(String rowIndex, String amount, String memberName) async {
     setState(() => isLoading = true);
-    // ১. পেমেন্ট স্ট্যাটাস আপডেট (Paid)
+    
     var res = await ApiService.updateTransactionStatus(rowIndex: rowIndex, status: 'Paid');
     
     if (res['status'] == 'success' || (res['status'] == 'error' && res['message'].contains("302"))) {
-      // 🔥 ২. জমা হিসেবে নতুন এন্ট্রি (এখানে date যুক্ত করা হলো)
+      // 🔥 এখানে paymentMethod যুক্ত করা হলো
       await ApiService.addTransaction(
         type: 'জমা', 
         amount: amount, 
         note: 'বকেয়া পরিশোধ', 
         memberName: memberName, 
         status: 'Paid',
-        date: DateFormat('yyyy-MM-dd').format(DateTime.now()), // আজকের তারিখ
+        date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+        paymentMethod: 'HAND CASH', 
       );
       _fetchDues();
       if (!mounted) return;
