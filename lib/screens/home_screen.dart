@@ -196,12 +196,13 @@ class HomeContentState extends State<HomeContent> {
       List<String> membersWhoPaid = [];
 
       for (var tx in response) {
-        String type = tx['Type'].toString();
+        String type = tx['Type'].toString().trim();
         double amount = double.tryParse(tx['Amount'].toString()) ?? 0.0;
         String fullDateStr = tx['Date'].toString();
         String formattedTxDate = fullDateStr.length >= 10 ? fullDateStr.substring(0, 10) : fullDateStr;
-        String status = tx['Status']?.toString() ?? 'Paid';
-        String paymentMethod = tx['PaymentMethod']?.toString() ?? 'HAND CASH';
+        String status = tx['Status']?.toString().trim() ?? 'Paid';
+        String paymentMethod = tx['PaymentMethod']?.toString().trim() ?? 'HAND CASH';
+        String txMemberName = tx['MemberName'].toString().trim().toLowerCase(); // 🔥 নাম ছোট হাতের করে নেওয়া হলো
 
         // মোট সম্পদ হিসাব
         if (status == 'Paid') {
@@ -209,18 +210,16 @@ class HomeContentState extends State<HomeContent> {
           else if (type == 'বিনিয়োগ' || type == 'খরচ') tempTotalAssets -= amount;
         }
 
-        // 🔥 হাতে নগদ হিসাব (শুধু HAND CASH হলেই যোগ হবে)
+        // হাতে নগদ হিসাব
         if (status == 'Paid') {
           if (type == 'জমা' || type == 'আয়' || type == 'বিলম্ব ফী') {
-            if (paymentMethod == 'HAND CASH') {
-              tempCash += amount;
-            }
+            if (paymentMethod == 'HAND CASH') tempCash += amount;
           } else if (type == 'খরচ') {
             tempCash -= amount; 
           }
         }
 
-        // 🔥 আজকের জমা ও খরচ (যেকোনো পেমেন্ট মেথড, যদি তারিখ আজকের হয়)
+        // আজকের জমা ও খরচ
         if (formattedTxDate == todayDate && status == 'Paid') {
           if (type == 'জমা') tempTodayDeposit += amount;
           if (type == 'খরচ') tempTodayExpense += amount;
@@ -229,15 +228,17 @@ class HomeContentState extends State<HomeContent> {
         // 🔥 এই মাসের আদায় ও কে কে জমা দিয়েছে
         if (fullDateStr.contains(currentMonth) && type == 'জমা' && status == 'Paid') {
           tempMonthCollection += amount;
-          membersWhoPaid.add(tx['MemberName'].toString().trim());
+          membersWhoPaid.add(txMemberName); // লিস্টে ছোট হাতের নাম সেভ হচ্ছে
         }
       }
 
-      // 🔥 কতজন জমা দেয়নি
+      // 🔥 কতজন জমা দেয়নি (নিখুঁত ম্যাচিং)
       int tempPendingCount = 0;
       if (membersRes is List) {
         for (var mem in membersRes) {
-          String mName = mem['Name'].toString().trim();
+          String mName = mem['Name'].toString().trim().toLowerCase(); // 🔥 নাম ছোট হাতের করে নেওয়া হলো
+          if (mName.isEmpty) continue; // ফাঁকা নাম বাদ
+          
           if (!membersWhoPaid.contains(mName)) {
             tempPendingCount++;
           }
@@ -638,8 +639,7 @@ class HomeContentState extends State<HomeContent> {
     );
   }
 
-  // ================= কাস্টম উইজেটসমূহ =================
-
+  // কাস্টম উইজেটসমূহ
   Widget _buildInfoCard(String title, String amount, IconData icon, Color color, bool isDark) {
     return Container(
       height: 100, padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 5),
