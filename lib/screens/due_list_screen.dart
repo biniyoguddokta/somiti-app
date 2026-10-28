@@ -24,7 +24,8 @@ class _DueListScreenState extends State<DueListScreen> {
     var response = await ApiService.getTransactions();
     if (response is List) {
       setState(() {
-        dueList = response.where((tx) => tx['Type'] == 'বকেয়া' && tx['Status'] == 'Unpaid').toList();
+        // 🔥 Status: Unpaid (বকেয়া বা বিলম্ব ফী) সবগুলো ফিল্টার করা হলো
+        dueList = response.where((tx) => tx['Status'] == 'Unpaid').toList();
         isLoading = false;
       });
     } else {
@@ -32,17 +33,17 @@ class _DueListScreenState extends State<DueListScreen> {
     }
   }
 
-  void _payDue(String rowIndex, String amount, String memberName) async {
+  void _payDue(String rowIndex, String amount, String memberName, String type) async {
     setState(() => isLoading = true);
     
     var res = await ApiService.updateTransactionStatus(rowIndex: rowIndex, status: 'Paid');
     
     if (res['status'] == 'success' || (res['status'] == 'error' && res['message'].contains("302"))) {
-      // 🔥 এখানে paymentMethod যুক্ত করা হলো
+      // পেমেন্ট শেষে ট্রানজেকশনে জমা হিসেবে যুক্ত হবে
       await ApiService.addTransaction(
         type: 'জমা', 
         amount: amount, 
-        note: 'বকেয়া পরিশোধ', 
+        note: '$type পরিশোধ', 
         memberName: memberName, 
         status: 'Paid',
         date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
@@ -50,7 +51,7 @@ class _DueListScreenState extends State<DueListScreen> {
       );
       _fetchDues();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("বকেয়া পরিশোধ সফল হয়েছে!"), backgroundColor: Colors.green));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("পরিশোধ সফল হয়েছে!"), backgroundColor: Colors.green));
     } else {
       setState(() => isLoading = false);
       if (!mounted) return;
@@ -62,7 +63,7 @@ class _DueListScreenState extends State<DueListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
-      appBar: AppBar(title: const Text("বকেয়া তালিকা"), backgroundColor: const Color(0xFFE53935), foregroundColor: Colors.white),
+      appBar: AppBar(title: const Text("বকেয়া ও বিলম্ব ফী"), backgroundColor: const Color(0xFFE53935), foregroundColor: Colors.white),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : dueList.isEmpty
@@ -73,13 +74,18 @@ class _DueListScreenState extends State<DueListScreen> {
                   itemBuilder: (context, index) {
                     var due = dueList[index];
                     String mName = due['MemberName'].toString();
+                    String type = due['Type'].toString();
+                    
                     return Card(
                       color: Colors.white,
                       margin: const EdgeInsets.only(bottom: 10),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       child: ListTile(
-                        leading: const CircleAvatar(backgroundColor: Colors.red, child: Icon(Icons.warning, color: Colors.white)),
-                        title: Text(mName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                        leading: CircleAvatar(
+                          backgroundColor: type == 'বিলম্ব ফী' ? Colors.orange : Colors.red, 
+                          child: Icon(type == 'বিলম্ব ফী' ? Icons.timer : Icons.warning, color: Colors.white)
+                        ),
+                        title: Text("$mName ($type)", style: const TextStyle(fontWeight: FontWeight.bold)),
                         subtitle: Text("তারিখ: ${due['Date'].toString().split(' ')[0]}"),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -88,7 +94,7 @@ class _DueListScreenState extends State<DueListScreen> {
                             const SizedBox(width: 10),
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(backgroundColor: Colors.green, padding: const EdgeInsets.symmetric(horizontal: 10)),
-                              onPressed: () => _payDue(due['RowIndex'].toString(), due['Amount'].toString(), mName),
+                              onPressed: () => _payDue(due['RowIndex'].toString(), due['Amount'].toString(), mName, type),
                               child: const Text("পরিশোধ", style: TextStyle(color: Colors.white, fontSize: 12)),
                             )
                           ],
