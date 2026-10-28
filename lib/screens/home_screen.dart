@@ -126,7 +126,9 @@ class HomeContentState extends State<HomeContent> {
   double cashInHand = 0.0;
   double todayDeposit = 0.0;
   double todayExpense = 0.0;
+  double thisMonthCollection = 0.0; // 🔥 এই মাসের আদায়
   int totalTransactions = 0;
+  int pendingMembersCount = 0; // 🔥 যারা জমা দেয়নি
   List<dynamic> recentTransactions = [];
   String latestNotice = "বিনিয়োগ উদ্যেক্তা অ্যাপে স্বাগতম! নতুন আপডেট পেতে চোখ রাখুন।";
 
@@ -177,38 +179,59 @@ class HomeContentState extends State<HomeContent> {
   Future<void> fetchDashboardData() async {
     setState(() => _isLoadingStats = true);
     var response = await ApiService.getTransactions();
+    var membersRes = await ApiService.getAllMembers();
     
     if (response is List) {
       double tempCash = 0.0;
       double tempTodayDeposit = 0.0;
       double tempTodayExpense = 0.0;
+      double tempMonthCollection = 0.0;
       int tempTotalTx = response.length;
       List<dynamic> tempRecent = [];
       double tempTotalAssets = 0.0;
 
       String todayDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      String currentMonth = DateFormat('yyyy-MM').format(DateTime.now());
+
+      List<String> membersWhoPaid = [];
 
       for (var tx in response) {
         String type = tx['Type'].toString();
         double amount = double.tryParse(tx['Amount'].toString()) ?? 0.0;
-        String dateStr = tx['Date'].toString();
+        String fullDateStr = tx['Date'].toString();
+        String formattedTxDate = fullDateStr.length >= 10 ? fullDateStr.substring(0, 10) : fullDateStr;
         String status = tx['Status']?.toString() ?? 'Paid';
 
-        // 🔥 মোট সম্পদ হিসাব (জমা + আয় + বিলম্ব ফী) - (বিনিয়োগ + খরচ)
+        // মোট সম্পদ হিসাব
         if (status == 'Paid') {
-          if (type == 'জমা' || type == 'আয়' || type == 'বিলম্ব ফী') {
-             tempTotalAssets += amount;
-          } else if (type == 'বিনিয়োগ' || type == 'খরচ') {
-             tempTotalAssets -= amount;
-          }
+          if (type == 'জমা' || type == 'আয়' || type == 'বিলম্ব ফী') tempTotalAssets += amount;
+          else if (type == 'বিনিয়োগ' || type == 'খরচ') tempTotalAssets -= amount;
         }
 
         if (type == 'জমা' || type == 'আয়' || type == 'বিনিয়োগ' || type == 'বিলম্ব ফী') tempCash += amount;
         else if (type == 'খরচ') tempCash -= amount;
 
-        if (dateStr.contains(todayDate)) {
+        // আজকের হিসাব
+        if (formattedTxDate == todayDate && status == 'Paid') {
           if (type == 'জমা') tempTodayDeposit += amount;
           if (type == 'খরচ') tempTodayExpense += amount;
+        }
+
+        // 🔥 এই মাসের আদায় ও কে কে জমা দিয়েছে তা বের করা
+        if (fullDateStr.contains(currentMonth) && type == 'জমা' && status == 'Paid') {
+          tempMonthCollection += amount;
+          membersWhoPaid.add(tx['MemberName'].toString().trim());
+        }
+      }
+
+      // 🔥 কতজন জমা দেয়নি তাদের হিসাব
+      int tempPendingCount = 0;
+      if (membersRes is List) {
+        for (var mem in membersRes) {
+          String mName = mem['Name'].toString().trim();
+          if (!membersWhoPaid.contains(mName)) {
+            tempPendingCount++;
+          }
         }
       }
 
@@ -222,7 +245,9 @@ class HomeContentState extends State<HomeContent> {
         cashInHand = tempCash;
         todayDeposit = tempTodayDeposit;
         todayExpense = tempTodayExpense;
+        thisMonthCollection = tempMonthCollection;
         totalTransactions = tempTotalTx;
+        pendingMembersCount = tempPendingCount;
         recentTransactions = tempRecent;
         totalAssets = tempTotalAssets;
         _isLoadingStats = false;
@@ -365,17 +390,19 @@ class HomeContentState extends State<HomeContent> {
                 padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10), 
                 decoration: BoxDecoration(color: const Color(0xFFE53935), borderRadius: BorderRadius.circular(15)),
                 child: Row(
-                  children: const [
-                    Icon(Icons.lock_clock, color: Colors.white, size: 28), 
-                    SizedBox(width: 15),
+                  children: [
+                    const Icon(Icons.lock_clock, color: Colors.white, size: 28), 
+                    const SizedBox(width: 15),
                     Expanded(child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text("সদস্য যাদের জমা বকেয়া আছে", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-                        SizedBox(height: 3), Text("বকেয়া গুলো দেখতে ট্যাপ করুন", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                        const Text("সদস্য যাদের জমা বকেয়া আছে", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                        const SizedBox(height: 3), 
+                        // 🔥 এখানে কতজন দেয়নি তা দেখাচ্ছে
+                        Text("এই মাসে $pendingMembersCount জন জমা দেননি। দেখতে ট্যাপ করুন।", style: const TextStyle(color: Colors.white70, fontSize: 12)),
                       ],
                     )),
-                    Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
+                    const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
                   ],
                 ),
               ),
@@ -478,7 +505,7 @@ class HomeContentState extends State<HomeContent> {
                               child: Icon(isDeposit ? Icons.arrow_downward : Icons.arrow_upward, color: isDeposit ? Colors.green : Colors.red),
                             ),
                             title: Text(tx['Type'].toString(), style: TextStyle(fontWeight: FontWeight.bold, color: isDeposit ? Colors.green : Colors.red)),
-                            subtitle: Text("${tx['MemberName']} | ${tx['Date'].toString().split(' ')[0]}"),
+                            subtitle: Text("${tx['MemberName']} | ${tx['Date'].toString().split('T')[0]}"), // ডেট ফিক্স
                             trailing: Text("৳ ${tx['Amount']}", style: TextStyle(fontWeight: FontWeight.bold, color: isDeposit ? Colors.green : Colors.red)),
                           ),
                         );
@@ -501,6 +528,7 @@ class HomeContentState extends State<HomeContent> {
             ),
             const SizedBox(height: 30),
 
+            // 🔥 চার্ট ও বিশ্লেষণ (এই মাসের আদায় দেখাবে)
             const Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("চার্ট ও বিশ্লেষণ", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey))),
             const SizedBox(height: 15),
             Padding(
@@ -517,9 +545,20 @@ class HomeContentState extends State<HomeContent> {
                       Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5), decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(20)), child: const Text("৩০ দিন", style: TextStyle(color: Color(0xFF00796B), fontSize: 12))),
                     ])
                   ]),
-                  const SizedBox(height: 60),
-                  const Text("এই সময়ে কোনো আদায় নেই", style: TextStyle(color: Colors.grey, fontSize: 16)),
-                  const SizedBox(height: 60),
+                  const SizedBox(height: 20),
+                  // 🔥 এখানে এই মাসের মোট আদায় দেখানো হচ্ছে
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(15)),
+                    child: Column(
+                      children: [
+                        const Text("এই মাসের মোট আদায়", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 5),
+                        Text("৳ ${thisMonthCollection.toStringAsFixed(0)}", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: isDark ? Colors.greenAccent : const Color(0xFF00796B))),
+                      ],
+                    ),
+                  ),
                 ]),
               ),
             ),
@@ -554,7 +593,7 @@ class HomeContentState extends State<HomeContent> {
             ),
             const SizedBox(height: 30),
 
-            // 🔥 ভাষা পরিবর্তন (সবার শেষে)
+            // 🔥 ভাষা পরিবর্তন
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
               child: Container(
