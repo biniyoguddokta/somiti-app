@@ -32,10 +32,10 @@ class _DueListScreenState extends State<DueListScreen> {
       List<dynamic> explicitUnpaid = [];
 
       for (var tx in txRes) {
-        String txName = tx['MemberName'].toString().trim();
-        String txType = tx['Type'].toString();
+        String txName = tx['MemberName'].toString().trim().toLowerCase(); // 🔥 ছোট হাতের নাম
+        String txType = tx['Type'].toString().trim();
         String txDate = tx['Date'].toString();
-        String txStatus = tx['Status']?.toString() ?? 'Paid';
+        String txStatus = tx['Status']?.toString().trim() ?? 'Paid';
 
         if (txDate.contains(currentMonth) && txType == 'জমা' && txStatus == 'Paid') {
           paidMembers.add(txName);
@@ -50,8 +50,12 @@ class _DueListScreenState extends State<DueListScreen> {
       
       // যারা এই মাসে জমা দেয়নি
       for (var mem in membersRes) {
-        String mName = mem['Name'].toString().trim();
-        if (!paidMembers.contains(mName)) {
+        String mName = mem['Name'].toString().trim(); // অরিজিনাল নাম
+        String mLowerName = mName.toLowerCase(); // ছোট হাতের নাম
+        
+        if (mLowerName.isEmpty) continue; // ফাঁকা নাম বাদ
+
+        if (!paidMembers.contains(mLowerName)) {
           tempPending.add({
             "type": "মাসিক চাঁদা",
             "name": mName,
@@ -62,7 +66,7 @@ class _DueListScreenState extends State<DueListScreen> {
         }
       }
 
-      // যাদের সরাসরি Unpaid এন্ট্রি আছে
+      // যাদের সরাসরি Unpaid এন্ট্রি আছে (বিলম্ব ফী)
       for (var unpaid in explicitUnpaid) {
          tempPending.add({
             "type": unpaid['Type'].toString(),
