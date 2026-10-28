@@ -66,10 +66,15 @@ class _MoreScreenState extends State<MoreScreen> {
     } else { setState(() => isLoadingStats = false); }
   }
 
-  // 🔥 প্রোফাইল ছবি আপলোড
+  // 🔥 প্রোফাইল ছবি আপলোড (রিসাইজসহ)
   Future<void> _pickAndUploadProfilePic() async {
     final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 30); // ৩০% কোয়ালিটি (সাইজ কম হবে)
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.gallery, 
+      imageQuality: 20, // 🔥 ছবি ২০% কোয়ালিটিতে ছোট করা হবে
+      maxWidth: 500,
+      maxHeight: 500,
+    );
     
     if (image != null) {
       setState(() => isUploading = true);
@@ -80,11 +85,17 @@ class _MoreScreenState extends State<MoreScreen> {
 
       var res = await ApiService.updateProfilePic(phone: phone, base64: base64Data);
       
-      if (res['status'] == "success" || res['message'] == "Updated") {
-        // ড্রাইভে আপলোড হওয়া ছবির নতুন লিংকটি আনতে হবে (সরাসরি API থেকে রিফ্রেশ করে)
+      if (res['status'] == "success" || res['message'] == "Updated" || res['message'] == "Success (302)") {
+        // সফল হলে ডেটা রিফ্রেশ করে নতুন ছবি লোড করা
         var members = await ApiService.getAllMembers();
         if (members is List) {
-          var myData = members.firstWhere((m) => m['Phone'].toString() == phone, orElse: () => null);
+          String cleanPhone = phone.startsWith('0') ? phone.substring(1) : phone;
+          var myData = members.firstWhere((m) {
+            String mPhone = m['Phone'].toString();
+            if(mPhone.startsWith('0')) mPhone = mPhone.substring(1);
+            return mPhone == cleanPhone;
+          }, orElse: () => null);
+
           if (myData != null && myData['ProfilePicUrl'] != null) {
             SharedPreferences prefs = await SharedPreferences.getInstance();
             await prefs.setString('userPic', myData['ProfilePicUrl']);
@@ -182,18 +193,20 @@ class _MoreScreenState extends State<MoreScreen> {
                     ),
                   ),
                   const SizedBox(width: 15),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
-                      const SizedBox(height: 5),
-                      Text(role == 'Admin' ? "অ্যাডমিন" : "সাধারণ সদস্য", style: const TextStyle(color: Colors.white70, fontSize: 14)),
-                    ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+                        const SizedBox(height: 5),
+                        Text(role == 'Admin' ? "অ্যাডমিন" : "সাধারণ সদস্য", style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                      ],
+                    ),
                   )
                 ],
               ),
             ),
-            // ... (বাকি স্ট্যাটস কার্ড এবং মেনু অপশন আগের মতোই থাকবে)
+            
             Transform.translate(
               offset: const Offset(0, -15),
               child: Padding(
