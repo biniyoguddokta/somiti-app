@@ -1,4 +1,7 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 import '../main.dart'; 
@@ -13,8 +16,9 @@ class MoreScreen extends StatefulWidget {
 }
 
 class _MoreScreenState extends State<MoreScreen> {
-  String name = "", role = "", phone = "";
+  String name = "", role = "", phone = "", profilePicUrl = "";
   bool isLoadingStats = true;
+  bool isUploading = false;
   bool _showInvestment = false;
 
   double totalDeposit = 0.0;
@@ -31,6 +35,7 @@ class _MoreScreenState extends State<MoreScreen> {
       name = prefs.getString('userName') ?? "User";
       role = prefs.getString('userRole') ?? "Member";
       phone = prefs.getString('userPhone') ?? "";
+      profilePicUrl = prefs.getString('userPic') ?? "";
     });
     _fetchStats();
   }
@@ -59,6 +64,41 @@ class _MoreScreenState extends State<MoreScreen> {
       }
       setState(() { totalProfit = tempProfit; totalInvestment = tempInv; activeProjects = tempActive; isLoadingStats = false; });
     } else { setState(() => isLoadingStats = false); }
+  }
+
+  // 🔥 প্রোফাইল ছবি আপলোড
+  Future<void> _pickAndUploadProfilePic() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 30); // ৩০% কোয়ালিটি (সাইজ কম হবে)
+    
+    if (image != null) {
+      setState(() => isUploading = true);
+      File file = File(image.path);
+      List<int> imageBytes = await file.readAsBytes();
+      String base64String = base64Encode(imageBytes);
+      String base64Data = "data:image/jpeg;base64,$base64String";
+
+      var res = await ApiService.updateProfilePic(phone: phone, base64: base64Data);
+      
+      if (res['status'] == "success" || res['message'] == "Updated") {
+        // ড্রাইভে আপলোড হওয়া ছবির নতুন লিংকটি আনতে হবে (সরাসরি API থেকে রিফ্রেশ করে)
+        var members = await ApiService.getAllMembers();
+        if (members is List) {
+          var myData = members.firstWhere((m) => m['Phone'].toString() == phone, orElse: () => null);
+          if (myData != null && myData['ProfilePicUrl'] != null) {
+            SharedPreferences prefs = await SharedPreferences.getInstance();
+            await prefs.setString('userPic', myData['ProfilePicUrl']);
+            setState(() => profilePicUrl = myData['ProfilePicUrl']);
+          }
+        }
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("প্রোফাইল ছবি আপডেট হয়েছে!"), backgroundColor: Colors.green));
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("ছবি আপলোডে সমস্যা হয়েছে!"), backgroundColor: Colors.red));
+      }
+      setState(() => isUploading = false);
+    }
   }
 
   void _logout() async {
@@ -90,13 +130,10 @@ class _MoreScreenState extends State<MoreScreen> {
             onPressed: () async {
               if (oldPinController.text.isNotEmpty && newPinController.text.isNotEmpty) {
                 var res = await ApiService.updatePin(phone: phone, newPin: newPinController.text.trim());
-                if (res['status'] == 'success') {
+                if (res['status'] == 'success' || res['message'] == "Updated") {
                   if (!mounted) return;
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("পিন সফলভাবে আপডেট হয়েছে!"), backgroundColor: Colors.green));
-                } else {
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res['message'] ?? "সমস্যা"), backgroundColor: Colors.red));
                 }
               }
             },
@@ -120,7 +157,30 @@ class _MoreScreenState extends State<MoreScreen> {
               decoration: const BoxDecoration(color: Color(0xFF00796B), borderRadius: BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20))),
               child: Row(
                 children: [
-                  const CircleAvatar(radius: 30, backgroundColor: Colors.white, child: Icon(Icons.person, size: 35, color: Color(0xFF00796B))),
+                  // 🔥 প্রোফাইল ছবি ও ক্যামেরা আইকন
+                  GestureDetector(
+                    onTap: _pickAndUploadProfilePic,
+                    child: Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 35, 
+                          backgroundColor: Colors.white, 
+                          backgroundImage: profilePicUrl.isNotEmpty ? NetworkImage(profilePicUrl) : null,
+                          child: profilePicUrl.isEmpty ? const Icon(Icons.person, size: 40, color: Color(0xFF00796B)) : null
+                        ),
+                        Positioned(
+                          bottom: 0, right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(5),
+                            decoration: const BoxDecoration(color: Colors.blue, shape: BoxShape.circle),
+                            child: isUploading 
+                              ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                              : const Icon(Icons.camera_alt, size: 15, color: Colors.white),
+                          ),
+                        )
+                      ],
+                    ),
+                  ),
                   const SizedBox(width: 15),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -133,6 +193,7 @@ class _MoreScreenState extends State<MoreScreen> {
                 ],
               ),
             ),
+            // ... (বাকি স্ট্যাটস কার্ড এবং মেনু অপশন আগের মতোই থাকবে)
             Transform.translate(
               offset: const Offset(0, -15),
               child: Padding(
