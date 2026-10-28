@@ -79,16 +79,22 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       setState(() => _isLoading = true);
       var txRes = await ApiService.getTransactions();
       if (txRes is List) {
-        String currentMonth = DateFormat('yyyy-MM').format(DateTime.now());
-        bool hasDeposited = txRes.any((tx) => 
-          tx['MemberName'] == _selectedMember && 
-          tx['Type'] == 'জমা' && 
-          tx['Date'].toString().startsWith(currentMonth)
-        );
+        String selectedDate = _dateController.text; 
+        String selectedMonth = selectedDate.length >= 7 ? selectedDate.substring(0, 7) : ""; // "2026-09"
+
+        bool hasDeposited = txRes.any((tx) {
+          String txMember = tx['MemberName'].toString().trim();
+          String txType = tx['Type'].toString();
+          String txDate = tx['Date'].toString();
+          
+          return txMember == _selectedMember!.trim() && 
+                 txType == 'জমা' && 
+                 txDate.contains(selectedMonth);
+        });
         
         if (hasDeposited) {
           setState(() => _isLoading = false);
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("এই মাসে ইতিমধ্যে জমা দেওয়া হয়েছে!"), backgroundColor: Colors.red));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("$_selectedMember এই মাসে ইতিমধ্যে জমা দিয়েছেন!"), backgroundColor: Colors.red));
           return;
         }
       }
