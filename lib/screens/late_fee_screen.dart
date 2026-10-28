@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // তারিখের জন্য নতুন ইমপোর্ট
+import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 
 class LateFeeScreen extends StatefulWidget {
@@ -48,14 +48,15 @@ class _LateFeeScreenState extends State<LateFeeScreen> {
 
     setState(() => isLoading = true);
     
-    // 🔥 এখানে date প্যারামিটারটি যুক্ত করা হলো
+    // 🔥 এখানে paymentMethod যুক্ত করা হলো
     var res = await ApiService.addTransaction(
       type: 'বিলম্ব ফী',
       amount: _amountController.text.trim(),
       note: _noteController.text.trim().isEmpty ? 'বিলম্ব ফী' : _noteController.text.trim(),
       memberName: _selectedMember!,
       status: 'Unpaid',
-      date: DateFormat('yyyy-MM-dd').format(DateTime.now()), // আজকের তারিখ
+      date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+      paymentMethod: 'HAND CASH', 
     );
     
     setState(() => isLoading = false);
@@ -81,7 +82,6 @@ class _LateFeeScreenState extends State<LateFeeScreen> {
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
-                // ফর্ম
                 Container(
                   padding: const EdgeInsets.all(15),
                   color: Colors.white,
@@ -109,7 +109,6 @@ class _LateFeeScreenState extends State<LateFeeScreen> {
                     ],
                   ),
                 ),
-                // লিস্ট
                 Expanded(
                   child: lateFees.isEmpty
                       ? const Center(child: Text("কোনো বিলম্ব ফী নেই"))
