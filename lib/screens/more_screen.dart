@@ -45,7 +45,6 @@ class _MoreScreenState extends State<MoreScreen> {
     if (txRes is List) {
       double tempDeposit = 0.0;
       for (var tx in txRes) {
-        // 🔥 শুধু এই সদস্যের জমা যোগ হবে
         if (tx['MemberName'].toString().trim() == name.trim()) {
           double amount = double.tryParse(tx['Amount'].toString()) ?? 0.0;
           if (tx['Type'] == 'জমা' && tx['Status'] == 'Paid') {
@@ -71,6 +70,7 @@ class _MoreScreenState extends State<MoreScreen> {
     } else { setState(() => isLoadingStats = false); }
   }
 
+  // 🔥 প্রোফাইল ছবি আপলোড
   Future<void> _pickAndUploadProfilePic() async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(
@@ -115,6 +115,31 @@ class _MoreScreenState extends State<MoreScreen> {
     }
   }
 
+  // 🔥 ফুল স্ক্রিন ছবি দেখার ডায়ালগ
+  void _showFullImage() {
+    if (profilePicUrl.isEmpty) return;
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: InteractiveViewer(
+            child: Image.network(
+              profilePicUrl,
+              fit: BoxFit.contain,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return const Center(child: CircularProgressIndicator());
+              },
+              errorBuilder: (context, error, stackTrace) => const Center(child: Icon(Icons.broken_image, color: Colors.white, size: 50)),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   void _logout() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isLoggedIn', false);
@@ -122,6 +147,7 @@ class _MoreScreenState extends State<MoreScreen> {
     Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const LoginScreen()), (route) => false);
   }
 
+  // 🔥 পিন পরিবর্তনের লজিক (৪-১০ ডিজিট এবং একই অঙ্ক ৪ বার নয়)
   void _showPinChangeDialog() {
     TextEditingController oldPinController = TextEditingController();
     TextEditingController newPinController = TextEditingController();
@@ -135,16 +161,29 @@ class _MoreScreenState extends State<MoreScreen> {
           children: [
             TextField(controller: oldPinController, obscureText: true, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "পুরোনো পিন")),
             const SizedBox(height: 10),
-            TextField(controller: newPinController, obscureText: true, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "নতুন পিন")),
+            TextField(controller: newPinController, obscureText: true, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "নতুন পিন (৪-১০ ডিজিট)")),
           ],
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text("বাতিল")),
           ElevatedButton(
             onPressed: () async {
-              if (oldPinController.text.isNotEmpty && newPinController.text.isNotEmpty) {
-                var res = await ApiService.updatePin(phone: phone, newPin: newPinController.text.trim());
-                if (res['status'] == 'success' || res['message'] == "Updated") {
+              String newPin = newPinController.text.trim();
+              
+              // ভ্যালিডেশন
+              if (newPin.length < 4 || newPin.length > 10) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("পিন ৪ থেকে ১০ ডিজিটের হতে হবে!"), backgroundColor: Colors.orange));
+                return;
+              }
+              // একই সংখ্যা ৪ বার চেক (যেমন: 1111, 2222)
+              if (RegExp(r'^(\d)\1{3,9}$').hasMatch(newPin)) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("একই সংখ্যা বারবার ব্যবহার করা যাবে না!"), backgroundColor: Colors.red));
+                return;
+              }
+
+              if (oldPinController.text.isNotEmpty) {
+                var res = await ApiService.updatePin(phone: phone, newPin: newPin);
+                if (res['status'] == 'success' || res['message'] == "Updated" || res['message'].contains("302")) {
                   if (!mounted) return;
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("পিন সফলভাবে আপডেট হয়েছে!"), backgroundColor: Colors.green));
@@ -178,6 +217,7 @@ class _MoreScreenState extends State<MoreScreen> {
                         CircleAvatar(
                           radius: 35, 
                           backgroundColor: Colors.white, 
+                          // 🔥 এখানে backgroundImage সরাসরি দেওয়া হয়েছে
                           backgroundImage: profilePicUrl.isNotEmpty ? NetworkImage(profilePicUrl) : null,
                           child: profilePicUrl.isEmpty ? const Icon(Icons.person, size: 40, color: Color(0xFF00796B)) : null
                         ),
@@ -199,7 +239,11 @@ class _MoreScreenState extends State<MoreScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+                        // 🔥 নামের পাশে ছবিতে ক্লিক করলে ফুল স্ক্রিন দেখার আইকন
+                        GestureDetector(
+                          onTap: _showFullImage,
+                          child: Text(name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+                        ),
                         const SizedBox(height: 5),
                         Text(role == 'Admin' ? "অ্যাডমিন" : "সাধারণ সদস্য", style: const TextStyle(color: Colors.white70, fontSize: 14)),
                       ],
@@ -209,6 +253,7 @@ class _MoreScreenState extends State<MoreScreen> {
               ),
             ),
             
+            // ... (বাকি স্ট্যাটস কার্ড এবং মেনু আগের মতোই থাকবে)
             Transform.translate(
               offset: const Offset(0, -15),
               child: Padding(
