@@ -48,7 +48,6 @@ class _LateFeeScreenState extends State<LateFeeScreen> {
 
     setState(() => isLoading = true);
     
-    // 🔥 এখানে paymentMethod যুক্ত করা হলো
     var res = await ApiService.addTransaction(
       type: 'বিলম্ব ফী',
       amount: _amountController.text.trim(),
@@ -73,11 +72,38 @@ class _LateFeeScreenState extends State<LateFeeScreen> {
     }
   }
 
+  // 🔥 অটো বকেয়া জেনারেট করার ফাংশন (এডমিনের জন্য)
+  void _generateAutoDue() async {
+    setState(() => isLoading = true);
+    var res = await ApiService.generateAutoDue();
+    setState(() => isLoading = false);
+
+    if (res['status'] == "success") {
+      _fetchData();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res['message'] ?? "সফলভাবে বকেয়া তৈরি হয়েছে!"), backgroundColor: Colors.green));
+    } else {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res['message'] ?? "সমস্যা"), backgroundColor: Colors.red));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
-      appBar: AppBar(title: const Text("বিলম্ব ফী"), backgroundColor: const Color(0xFF00796B), foregroundColor: Colors.white),
+      appBar: AppBar(
+        title: const Text("বিলম্ব ফী"), 
+        backgroundColor: const Color(0xFF00796B), 
+        foregroundColor: Colors.white,
+        actions: [
+          // 🔥 এডমিনের জন্য অটো বকেয়া বাটন
+          IconButton(
+            icon: const Icon(Icons.autorenew, tooltip: "মাসিক বকেয়া তৈরি করুন"),
+            onPressed: _generateAutoDue,
+          )
+        ],
+      ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
