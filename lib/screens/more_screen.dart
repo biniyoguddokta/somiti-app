@@ -45,8 +45,13 @@ class _MoreScreenState extends State<MoreScreen> {
     if (txRes is List) {
       double tempDeposit = 0.0;
       for (var tx in txRes) {
-        double amount = double.tryParse(tx['Amount'].toString()) ?? 0.0;
-        if (tx['Type'] == 'জমা' && tx['Status'] == 'Paid') tempDeposit += amount;
+        // 🔥 শুধু এই সদস্যের জমা যোগ হবে
+        if (tx['MemberName'].toString().trim() == name.trim()) {
+          double amount = double.tryParse(tx['Amount'].toString()) ?? 0.0;
+          if (tx['Type'] == 'জমা' && tx['Status'] == 'Paid') {
+            tempDeposit += amount;
+          }
+        }
       }
       setState(() => totalDeposit = tempDeposit);
     }
@@ -68,7 +73,6 @@ class _MoreScreenState extends State<MoreScreen> {
 
   Future<void> _pickAndUploadProfilePic() async {
     final ImagePicker picker = ImagePicker();
-    // 🔥 ছবির সাইজ আরও ছোট করা হলো
     final XFile? image = await picker.pickImage(
       source: ImageSource.gallery, 
       imageQuality: 10, 
