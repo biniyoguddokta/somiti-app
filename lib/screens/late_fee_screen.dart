@@ -72,7 +72,7 @@ class _LateFeeScreenState extends State<LateFeeScreen> {
     }
   }
 
-  // 🔥 অটো বকেয়া জেনারেট করার ফাংশন (এডমিনের জন্য)
+  // অটো বকেয়া জেনারেট করার ফাংশন (এডমিনের জন্য)
   void _generateAutoDue() async {
     setState(() => isLoading = true);
     var res = await ApiService.generateAutoDue();
@@ -97,9 +97,10 @@ class _LateFeeScreenState extends State<LateFeeScreen> {
         backgroundColor: const Color(0xFF00796B), 
         foregroundColor: Colors.white,
         actions: [
-          // 🔥 এডমিনের জন্য অটো বকেয়া বাটন
+          // 🔥 এখানে tooltip ঠিক করা হয়েছে
           IconButton(
-            icon: const Icon(Icons.autorenew, tooltip: "মাসিক বকেয়া তৈরি করুন"),
+            tooltip: "মাসিক বকেয়া তৈরি করুন",
+            icon: const Icon(Icons.autorenew),
             onPressed: _generateAutoDue,
           )
         ],
