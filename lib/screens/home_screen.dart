@@ -126,9 +126,9 @@ class HomeContentState extends State<HomeContent> {
   double cashInHand = 0.0;
   double todayDeposit = 0.0;
   double todayExpense = 0.0;
-  double thisMonthCollection = 0.0; // 🔥 এই মাসের আদায়
+  double thisMonthCollection = 0.0; 
   int totalTransactions = 0;
-  int pendingMembersCount = 0; // 🔥 যারা জমা দেয়নি
+  int pendingMembersCount = 0; 
   List<dynamic> recentTransactions = [];
   String latestNotice = "বিনিয়োগ উদ্যেক্তা অ্যাপে স্বাগতম! নতুন আপডেট পেতে চোখ রাখুন।";
 
@@ -202,7 +202,6 @@ class HomeContentState extends State<HomeContent> {
         String formattedTxDate = fullDateStr.length >= 10 ? fullDateStr.substring(0, 10) : fullDateStr;
         String status = tx['Status']?.toString() ?? 'Paid';
 
-        // মোট সম্পদ হিসাব
         if (status == 'Paid') {
           if (type == 'জমা' || type == 'আয়' || type == 'বিলম্ব ফী') tempTotalAssets += amount;
           else if (type == 'বিনিয়োগ' || type == 'খরচ') tempTotalAssets -= amount;
@@ -211,20 +210,17 @@ class HomeContentState extends State<HomeContent> {
         if (type == 'জমা' || type == 'আয়' || type == 'বিনিয়োগ' || type == 'বিলম্ব ফী') tempCash += amount;
         else if (type == 'খরচ') tempCash -= amount;
 
-        // আজকের হিসাব
         if (formattedTxDate == todayDate && status == 'Paid') {
           if (type == 'জমা') tempTodayDeposit += amount;
           if (type == 'খরচ') tempTodayExpense += amount;
         }
 
-        // 🔥 এই মাসের আদায় ও কে কে জমা দিয়েছে তা বের করা
         if (fullDateStr.contains(currentMonth) && type == 'জমা' && status == 'Paid') {
           tempMonthCollection += amount;
           membersWhoPaid.add(tx['MemberName'].toString().trim());
         }
       }
 
-      // 🔥 কতজন জমা দেয়নি তাদের হিসাব
       int tempPendingCount = 0;
       if (membersRes is List) {
         for (var mem in membersRes) {
@@ -268,7 +264,7 @@ class HomeContentState extends State<HomeContent> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ১. টপ বার
+            // টপ বার
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
               child: Row(
@@ -314,7 +310,7 @@ class HomeContentState extends State<HomeContent> {
               ),
             ),
             
-            // ২. ব্যানার
+            // ব্যানার
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15),
               child: SizedBox(
@@ -350,7 +346,7 @@ class HomeContentState extends State<HomeContent> {
             ),
             const SizedBox(height: 10),
             
-            // ৩. নোটিশ
+            // নোটিশ
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
               padding: const EdgeInsets.symmetric(vertical: 8),
@@ -380,7 +376,7 @@ class HomeContentState extends State<HomeContent> {
               ),
             ),
 
-            // ৪. লাল বক্স
+            // লাল বক্স
             InkWell(
               onTap: () {
                 Navigator.push(context, MaterialPageRoute(builder: (c) => const DueListScreen()));
@@ -398,7 +394,6 @@ class HomeContentState extends State<HomeContent> {
                       children: [
                         const Text("সদস্য যাদের জমা বকেয়া আছে", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
                         const SizedBox(height: 3), 
-                        // 🔥 এখানে কতজন দেয়নি তা দেখাচ্ছে
                         Text("এই মাসে $pendingMembersCount জন জমা দেননি। দেখতে ট্যাপ করুন।", style: const TextStyle(color: Colors.white70, fontSize: 12)),
                       ],
                     )),
@@ -408,7 +403,7 @@ class HomeContentState extends State<HomeContent> {
               ),
             ),
 
-            // ৫. শুভেচ্ছা
+            // শুভেচ্ছা
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
               child: Row(children: [
@@ -419,7 +414,7 @@ class HomeContentState extends State<HomeContent> {
             const Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("বিনিয়োগ উদ্যোক্তা", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold))),
             const SizedBox(height: 20),
             
-            // ৬. ৪টি কার্ড
+            // ৪টি কার্ড
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15),
               child: _isLoadingStats 
@@ -443,19 +438,21 @@ class HomeContentState extends State<HomeContent> {
             ),
             const SizedBox(height: 20),
             
-            // ৭. ৪টি অ্যাকশন বাটন
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 15),
-              child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                _buildActionButton(context, "জমা", Icons.money, const Color(0xFF43A047), "জমা"),
-                _buildActionButton(context, "খরচ", Icons.shopping_bag, const Color(0xFFE53935), "খরচ"),
-                _buildActionButton(context, "আয়", Icons.savings, const Color(0xFF00897B), "আয়"),
-                _buildActionButton(context, "বিনিয়োগ", Icons.menu_book, const Color(0xFF8E24AA), "বিনিয়োগ"),
-              ]),
-            ),
-            const SizedBox(height: 30),
+            // 🔥 ৪টি অ্যাকশন বাটন (শুধু অ্যাডমিন দেখবে)
+            if (userRole == 'Admin') ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 15),
+                child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                  _buildActionButton(context, "জমা", Icons.money, const Color(0xFF43A047), "জমা"),
+                  _buildActionButton(context, "খরচ", Icons.shopping_bag, const Color(0xFFE53935), "খরচ"),
+                  _buildActionButton(context, "আয়", Icons.savings, const Color(0xFF00897B), "আয়"),
+                  _buildActionButton(context, "বিনিয়োগ", Icons.menu_book, const Color(0xFF8E24AA), "বিনিয়োগ"),
+                ]),
+              ),
+              const SizedBox(height: 30),
+            ],
             
-            // ৮. মডিউল ও ফিচার
+            // মডিউল ও ফিচার
             const Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("মডিউল ও ফিচার", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey))),
             const SizedBox(height: 15),
             Padding(
@@ -485,7 +482,7 @@ class HomeContentState extends State<HomeContent> {
             ),
             const SizedBox(height: 30),
 
-            // ৯. সাম্প্রতিক লেনদেন
+            // সাম্প্রতিক লেনদেন
             const Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("সাম্প্রতিক লেনদেন", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey))),
             const SizedBox(height: 15),
             Padding(
@@ -505,7 +502,7 @@ class HomeContentState extends State<HomeContent> {
                               child: Icon(isDeposit ? Icons.arrow_downward : Icons.arrow_upward, color: isDeposit ? Colors.green : Colors.red),
                             ),
                             title: Text(tx['Type'].toString(), style: TextStyle(fontWeight: FontWeight.bold, color: isDeposit ? Colors.green : Colors.red)),
-                            subtitle: Text("${tx['MemberName']} | ${tx['Date'].toString().split('T')[0]}"), // ডেট ফিক্স
+                            subtitle: Text("${tx['MemberName']} | ${tx['Date'].toString().split('T')[0]}"),
                             trailing: Text("৳ ${tx['Amount']}", style: TextStyle(fontWeight: FontWeight.bold, color: isDeposit ? Colors.green : Colors.red)),
                           ),
                         );
@@ -514,7 +511,7 @@ class HomeContentState extends State<HomeContent> {
             ),
             const SizedBox(height: 30),
 
-            // ================= নিচের অংশ (SMS, চার্ট ও সেটিংস) =================
+            // চার্ট ও সেটিংস
             const Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("SMS", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey))),
             const SizedBox(height: 15),
             Padding(
@@ -528,7 +525,6 @@ class HomeContentState extends State<HomeContent> {
             ),
             const SizedBox(height: 30),
 
-            // 🔥 চার্ট ও বিশ্লেষণ (এই মাসের আদায় দেখাবে)
             const Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("চার্ট ও বিশ্লেষণ", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey))),
             const SizedBox(height: 15),
             Padding(
@@ -546,7 +542,6 @@ class HomeContentState extends State<HomeContent> {
                     ])
                   ]),
                   const SizedBox(height: 20),
-                  // 🔥 এখানে এই মাসের মোট আদায় দেখানো হচ্ছে
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 20),
@@ -593,7 +588,7 @@ class HomeContentState extends State<HomeContent> {
             ),
             const SizedBox(height: 30),
 
-            // 🔥 ভাষা পরিবর্তন
+            // ভাষা পরিবর্তন
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
               child: Container(
@@ -629,8 +624,7 @@ class HomeContentState extends State<HomeContent> {
     );
   }
 
-  // ================= কাস্টম উইজেটসমূহ =================
-
+  // কাস্টম উইজেটসমূহ
   Widget _buildInfoCard(String title, String amount, IconData icon, Color color, bool isDark) {
     return Container(
       height: 100, padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 5),
