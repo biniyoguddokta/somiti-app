@@ -37,33 +37,48 @@ class ApiService {
   }
 
   static Future<dynamic> getAllMembers() => _getData("getAllMembers");
+  
   static Future<Map<String, dynamic>> addMember({required String name, required String phone, required String email, required String pin, required String role, required String designation}) 
     => _postData("addMember", {"name": name, "phone": phone, "email": email, "pin": pin, "role": role, "designation": designation});
+  
   static Future<Map<String, dynamic>> updateRole({required String phone, required String newRole}) 
     => _postData("updateRole", {"phone": phone, "newRole": newRole});
+  
   static Future<Map<String, dynamic>> updateDesignation({required String phone, required String designation}) 
     => _postData("updateDesignation", {"phone": phone, "designation": designation});
+  
   static Future<Map<String, dynamic>> updatePin({required String phone, required String newPin}) 
     => _postData("updatePin", {"phone": phone, "newPin": newPin});
+  
   static Future<Map<String, dynamic>> updateProfilePic({required String phone, required String base64})
     => _postData("updateProfilePic", {"phone": phone, "base64": base64});
     
   static Future<dynamic> getTransactions() => _getData("getTransactions");
+  
   static Future<Map<String, dynamic>> addTransaction({required String type, required String amount, required String note, required String memberName, required String status, required String date, required String paymentMethod}) 
     => _postData("addTransaction", {"type": type, "amount": amount, "note": note, "memberName": memberName, "status": status, "date": date, "paymentMethod": paymentMethod});
+  
   static Future<Map<String, dynamic>> updateTransactionStatus({required String rowIndex, required String status})
     => _postData("updateTransactionStatus", {"rowIndex": rowIndex, "status": status});
+  
   static Future<Map<String, dynamic>> generateAutoDue() => _postData("generateAutoDue", {});
+  
   static Future<dynamic> getInvestments() => _getData("getInvestments");
+
+  // 🔥 এখানে addInvestment ফাংশনটি ঠিক করা হলো
   static Future<Map<String, dynamic>> addInvestment({required String sector, required String projectName, required String investAmount, required String startDate, required String endDate, required String profitAmount}) 
-static Future<Map<String, dynamic>> completeInvestment({required String rowIndex, required String profitAmount, required String completionDate, required String note}) 
-  => _postData("completeInvestment", {
-      "rowIndex": rowIndex, 
-      "profitAmount": profitAmount, 
-      "completionDate": completionDate, 
-      "note": note
-    });
     => _postData("addInvestment", {"sector": sector, "projectName": projectName, "investAmount": investAmount, "startDate": startDate, "endDate": endDate, "profitAmount": profitAmount});
+
+  // 🔥 completeInvestment ফাংশনটি সঠিক জায়গায় বসানো হলো
+  static Future<Map<String, dynamic>> completeInvestment({required String rowIndex, required String profitAmount, required String completionDate, required String note}) 
+    => _postData("completeInvestment", {
+        "rowIndex": rowIndex, 
+        "profitAmount": profitAmount, 
+        "completionDate": completionDate, 
+        "note": note
+      });
+
   static Future<dynamic> getConstitution() => _getData("getConstitution");
+  
   static Future<dynamic> getLateFees() => _getData("getLateFees");
 }
