@@ -198,11 +198,14 @@ class HomeContentState extends State<HomeContent> {
       for (var tx in response) {
         String type = tx['Type'].toString().trim();
         double amount = double.tryParse(tx['Amount'].toString()) ?? 0.0;
-        String fullDateStr = tx['Date'].toString();
+        
+        // যেহেতু API থেকে yyyy-MM-dd আসছে, তাই সরাসরি substring নিলেই হবে
+        String fullDateStr = tx['Date'].toString().trim();
         String formattedTxDate = fullDateStr.length >= 10 ? fullDateStr.substring(0, 10) : fullDateStr;
+        
         String status = tx['Status']?.toString().trim() ?? 'Paid';
         String paymentMethod = tx['PaymentMethod']?.toString().trim() ?? 'HAND CASH';
-        String txMemberName = tx['MemberName'].toString().trim().toLowerCase(); // 🔥 নাম ছোট হাতের করে নেওয়া হলো
+        String txMemberName = tx['MemberName'].toString().trim().toLowerCase();
 
         // মোট সম্পদ হিসাব
         if (status == 'Paid') {
@@ -210,7 +213,7 @@ class HomeContentState extends State<HomeContent> {
           else if (type == 'বিনিয়োগ' || type == 'খরচ') tempTotalAssets -= amount;
         }
 
-        // হাতে নগদ হিসাব
+        // হাতে নগদ হিসাব (শুধু HAND CASH)
         if (status == 'Paid') {
           if (type == 'জমা' || type == 'আয়' || type == 'বিলম্ব ফী') {
             if (paymentMethod == 'HAND CASH') tempCash += amount;
@@ -225,20 +228,19 @@ class HomeContentState extends State<HomeContent> {
           if (type == 'খরচ') tempTodayExpense += amount;
         }
 
-        // 🔥 এই মাসের আদায় ও কে কে জমা দিয়েছে
-        if (fullDateStr.contains(currentMonth) && type == 'জমা' && status == 'Paid') {
+        // এই মাসের আদায়
+        if (formattedTxDate.contains(currentMonth) && type == 'জমা' && status == 'Paid') {
           tempMonthCollection += amount;
-          membersWhoPaid.add(txMemberName); // লিস্টে ছোট হাতের নাম সেভ হচ্ছে
+          membersWhoPaid.add(txMemberName);
         }
       }
 
-      // 🔥 কতজন জমা দেয়নি (নিখুঁত ম্যাচিং)
+      // কতজন জমা দেয়নি
       int tempPendingCount = 0;
       if (membersRes is List) {
         for (var mem in membersRes) {
-          String mName = mem['Name'].toString().trim().toLowerCase(); // 🔥 নাম ছোট হাতের করে নেওয়া হলো
-          if (mName.isEmpty) continue; // ফাঁকা নাম বাদ
-          
+          String mName = mem['Name'].toString().trim().toLowerCase();
+          if (mName.isEmpty) continue;
           if (!membersWhoPaid.contains(mName)) {
             tempPendingCount++;
           }
@@ -516,7 +518,7 @@ class HomeContentState extends State<HomeContent> {
                               child: Icon(isDeposit ? Icons.arrow_downward : Icons.arrow_upward, color: isDeposit ? Colors.green : Colors.red),
                             ),
                             title: Text(tx['Type'].toString(), style: TextStyle(fontWeight: FontWeight.bold, color: isDeposit ? Colors.green : Colors.red)),
-                            subtitle: Text("${tx['MemberName']} | ${tx['Date'].toString().split('T')[0]}"),
+                            subtitle: Text("${tx['MemberName']} | ${tx['Date'].toString().split(' ')[0]}"),
                             trailing: Text("৳ ${tx['Amount']}", style: TextStyle(fontWeight: FontWeight.bold, color: isDeposit ? Colors.green : Colors.red)),
                           ),
                         );
