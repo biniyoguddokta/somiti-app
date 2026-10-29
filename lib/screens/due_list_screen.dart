@@ -66,7 +66,7 @@ class _DueListScreenState extends State<DueListScreen> {
         }
       }
 
-      // যাদের সরাসরি Unpaid এন্ট্রি আছে
+      // যাদের সরাসরি Unpaid এন্ট্রি আছে (বিলম্ব ফী/বকেয়া)
       for (var unpaid in explicitUnpaid) {
          tempPending.add({
             "type": unpaid['Type'].toString(),
@@ -86,46 +86,6 @@ class _DueListScreenState extends State<DueListScreen> {
     }
   }
 
-  void _payDue(String rowIndex, String amount, String memberName, String type) async {
-    if (rowIndex.isEmpty) {
-      setState(() => isLoading = true);
-      await ApiService.addTransaction(
-        type: 'জমা', 
-        amount: amount, 
-        note: '$type পরিশোধ (অটো)', 
-        memberName: memberName, 
-        status: 'Paid',
-        date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
-        paymentMethod: 'HAND CASH', 
-      );
-      _fetchDues();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("পরিশোধ সফল হয়েছে!"), backgroundColor: Colors.green));
-    } else {
-      setState(() => isLoading = true);
-      var res = await ApiService.updateTransactionStatus(rowIndex: rowIndex, status: 'Paid');
-      
-      if (res['status'] == 'success' || res['message'].contains("302")) {
-        await ApiService.addTransaction(
-          type: 'জমা', 
-          amount: amount, 
-          note: '$type পরিশোধ', 
-          memberName: memberName, 
-          status: 'Paid',
-          date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
-          paymentMethod: 'HAND CASH', 
-        );
-        _fetchDues();
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("পরিশোধ সফল হয়েছে!"), backgroundColor: Colors.green));
-      } else {
-        setState(() => isLoading = false);
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("পরিশোধ করতে সমস্যা হয়েছে!"), backgroundColor: Colors.red));
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -142,7 +102,6 @@ class _DueListScreenState extends State<DueListScreen> {
                     var due = pendingList[index];
                     String mName = due['name'];
                     String type = due['type'];
-                    String rowIndex = due['rowIndex'];
                     
                     return Card(
                       color: Colors.white,
@@ -155,17 +114,10 @@ class _DueListScreenState extends State<DueListScreen> {
                         ),
                         title: Text("$mName ($type)", style: const TextStyle(fontWeight: FontWeight.bold)),
                         subtitle: Text("তারিখ: ${due['date']}"),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text("৳ ${due['amount']}", style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 16)),
-                            const SizedBox(width: 10),
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(backgroundColor: Colors.green, padding: const EdgeInsets.symmetric(horizontal: 10)),
-                              onPressed: () => _payDue(rowIndex, due['amount'], mName, type),
-                              child: const Text("পরিশোধ", style: TextStyle(color: Colors.white, fontSize: 12)),
-                            )
-                          ],
+                        // 🔥 এখানে শুধু টাকার পরিমাণ দেখাবে, কোনো বাটন থাকবে না
+                        trailing: Text(
+                          "৳ ${due['amount']}", 
+                          style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 16)
                         ),
                       ),
                     );
