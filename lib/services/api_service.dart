@@ -21,14 +21,8 @@ class ApiService {
         body: jsonEncode(body),
       );
       
-      // 🔥 302 আসলে সেটি সফল ধরা হবে (কারণ ডেটা ইতিমধ্যে সেভ হয়ে গেছে)
-      if (res.statusCode == 302) {
-        return {"status": "success", "message": "Success (302)"};
-      }
-
-      if (res.body.contains("<!DOCTYPE html>") || res.body.contains("<html>")) {
-        return {"status": "error", "message": "Permission Issue"};
-      }
+      if (res.statusCode == 302) return {"status": "success", "message": "Success (302)"};
+      if (res.body.contains("<!DOCTYPE html>") || res.body.contains("<html>")) return {"status": "error", "message": "Permission Issue"};
       
       if (res.statusCode == 200) {
         try {
