@@ -32,9 +32,9 @@ class _DueListScreenState extends State<DueListScreen> {
       List<dynamic> explicitUnpaid = [];
 
       for (var tx in txRes) {
-        String txName = tx['MemberName'].toString().trim().toLowerCase(); // 🔥 ছোট হাতের নাম
+        String txName = tx['MemberName'].toString().trim().toLowerCase();
         String txType = tx['Type'].toString().trim();
-        String txDate = tx['Date'].toString();
+        String txDate = tx['Date'].toString().trim();
         String txStatus = tx['Status']?.toString().trim() ?? 'Paid';
 
         if (txDate.contains(currentMonth) && txType == 'জমা' && txStatus == 'Paid') {
@@ -50,10 +50,10 @@ class _DueListScreenState extends State<DueListScreen> {
       
       // যারা এই মাসে জমা দেয়নি
       for (var mem in membersRes) {
-        String mName = mem['Name'].toString().trim(); // অরিজিনাল নাম
-        String mLowerName = mName.toLowerCase(); // ছোট হাতের নাম
+        String mName = mem['Name'].toString().trim();
+        String mLowerName = mName.toLowerCase();
         
-        if (mLowerName.isEmpty) continue; // ফাঁকা নাম বাদ
+        if (mLowerName.isEmpty) continue;
 
         if (!paidMembers.contains(mLowerName)) {
           tempPending.add({
@@ -66,13 +66,13 @@ class _DueListScreenState extends State<DueListScreen> {
         }
       }
 
-      // যাদের সরাসরি Unpaid এন্ট্রি আছে (বিলম্ব ফী)
+      // যাদের সরাসরি Unpaid এন্ট্রি আছে
       for (var unpaid in explicitUnpaid) {
          tempPending.add({
             "type": unpaid['Type'].toString(),
             "name": unpaid['MemberName'].toString(),
             "amount": unpaid['Amount'].toString(),
-            "date": unpaid['Date'].toString().split('T')[0],
+            "date": unpaid['Date'].toString().split(' ')[0],
             "rowIndex": unpaid['RowIndex'].toString()
          });
       }
