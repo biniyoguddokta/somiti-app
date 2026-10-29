@@ -199,7 +199,6 @@ class HomeContentState extends State<HomeContent> {
         String type = tx['Type'].toString().trim();
         double amount = double.tryParse(tx['Amount'].toString()) ?? 0.0;
         
-        // যেহেতু API থেকে yyyy-MM-dd আসছে, তাই সরাসরি substring নিলেই হবে
         String fullDateStr = tx['Date'].toString().trim();
         String formattedTxDate = fullDateStr.length >= 10 ? fullDateStr.substring(0, 10) : fullDateStr;
         
@@ -641,7 +640,8 @@ class HomeContentState extends State<HomeContent> {
     );
   }
 
-  // কাস্টম উইজেটসমূহ
+  // ================= কাস্টম উইজেটসমূহ =================
+
   Widget _buildInfoCard(String title, String amount, IconData icon, Color color, bool isDark) {
     return Container(
       height: 100, padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 5),
@@ -656,6 +656,7 @@ class HomeContentState extends State<HomeContent> {
     );
   }
 
+  // 🔥 এখানে বাটনে ক্লিক করলে হিস্ট্রি পেজে যাওয়ার লজিক বসানো হলো
   Widget _buildActionButton(BuildContext context, String title, IconData icon, Color color, String type) {
     return Expanded(
       child: InkWell(
@@ -663,7 +664,8 @@ class HomeContentState extends State<HomeContent> {
           if (type == "বিনিয়োগ") {
              await Navigator.push(context, MaterialPageRoute(builder: (c) => InvestmentScreen(userRole: userRole)));
           } else {
-             await Navigator.push(context, MaterialPageRoute(builder: (c) => AddTransactionScreen(type: type)));
+             // জমা, খরচ বা আয়ের ক্ষেত্রে সরাসরি লিস্ট পেজে যাবে
+             await Navigator.push(context, MaterialPageRoute(builder: (c) => TransactionListScreen(type: type)));
           }
           fetchDashboardData(); 
         },
