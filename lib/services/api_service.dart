@@ -56,6 +56,13 @@ class ApiService {
   static Future<Map<String, dynamic>> generateAutoDue() => _postData("generateAutoDue", {});
   static Future<dynamic> getInvestments() => _getData("getInvestments");
   static Future<Map<String, dynamic>> addInvestment({required String sector, required String projectName, required String investAmount, required String startDate, required String endDate, required String profitAmount}) 
+static Future<Map<String, dynamic>> completeInvestment({required String rowIndex, required String profitAmount, required String completionDate, required String note}) 
+  => _postData("completeInvestment", {
+      "rowIndex": rowIndex, 
+      "profitAmount": profitAmount, 
+      "completionDate": completionDate, 
+      "note": note
+    });
     => _postData("addInvestment", {"sector": sector, "projectName": projectName, "investAmount": investAmount, "startDate": startDate, "endDate": endDate, "profitAmount": profitAmount});
   static Future<dynamic> getConstitution() => _getData("getConstitution");
   static Future<dynamic> getLateFees() => _getData("getLateFees");
