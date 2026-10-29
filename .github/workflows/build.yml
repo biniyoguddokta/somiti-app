@@ -21,53 +21,15 @@ jobs:
       with:
         channel: 'stable'
 
+    # 🔥 Gradle ক্যাশ পরিষ্কার করার স্টেপ (এরর সমাধানের জন্য)
+    - name: Clean Gradle Cache
+      run: rm -rf ~/.gradle/caches
+
     - name: Recreate Flutter Platform Folders
       run: flutter create .
 
     - name: Install dependencies
       run: flutter pub get
-
-    # 🔥 429 Error Fix: Google Maven Mirror ব্যবহার করা হলো
-    - name: Fix Gradle Repositories (429 Fix)
-      run: |
-        cat << 'EOF' > android/settings.gradle.kts
-        pluginManagement {
-            val flutterSdkPath = run {
-                val properties = java.util.Properties()
-                file("local.properties").inputStream().use { properties.load(it) }
-                val flutterSdkPath = properties.getProperty("flutter.sdk")
-                require(flutterSdkPath != null) { "flutter.sdk not set in local.properties" }
-                flutterSdkPath
-            }
-
-            includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
-
-            repositories {
-                google()
-                mavenCentral()
-                gradlePluginPortal()
-            }
-        }
-
-        plugins {
-            id("dev.flutter.flutter-plugin-loader") version "1.0.0"
-            id("com.android.application") version "8.1.0" apply false
-            id("org.jetbrains.kotlin.android") version "1.9.0" apply false
-        }
-
-        include(":app")
-        EOF
-
-        # Maven Central এর 429 এড়াতে Google এর মিরর ব্যবহার করা হচ্ছে
-        cat << 'EOF' > android/build.gradle.kts
-        allprojects {
-            repositories {
-                google()
-                mavenCentral()
-                maven { url = uri("https://maven-central.storage-download.googleapis.com/maven2/") }
-            }
-        }
-        EOF
 
     - name: Add Internet Permission
       run: sed -i 's/<application/<uses-permission android:name="android.permission.INTERNET"\/>\n    <application/' android/app/src/main/AndroidManifest.xml
