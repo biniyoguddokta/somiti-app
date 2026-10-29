@@ -74,24 +74,23 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       return;
     }
 
-    // 🔥 জমার ক্ষেত্রে মাসে ১ বার চেক করা (নিখুঁত লজিক)
     if (widget.type == "জমা") {
       setState(() => _isLoading = true);
       var txRes = await ApiService.getTransactions();
       if (txRes is List) {
         String selectedDate = _dateController.text;
-        String selectedMonth = selectedDate.substring(0, 7); // "yyyy-MM" বের করা হচ্ছে
+        String selectedMonth = selectedDate.substring(0, 7); // "yyyy-MM"
 
         bool hasDeposited = txRes.any((tx) {
-          String txMember = tx['MemberName'].toString().trim();
-          String txType = tx['Type'].toString();
-          String txDate = tx['Date'].toString();
-          String txStatus = tx['Status']?.toString() ?? 'Paid';
+          String txMember = tx['MemberName'].toString().trim().toLowerCase();
+          String txType = tx['Type'].toString().trim();
+          String txDate = tx['Date'].toString().trim();
+          String txStatus = tx['Status']?.toString().trim() ?? 'Paid';
           
-          return txMember == _selectedMember!.trim() && 
+          return txMember == _selectedMember!.trim().toLowerCase() && 
                  txType == 'জমা' && 
                  txStatus == 'Paid' &&
-                 txDate.contains(selectedMonth); // এই মাসে দেওয়া হয়েছে কি না
+                 txDate.contains(selectedMonth); 
         });
         
         if (hasDeposited) {
