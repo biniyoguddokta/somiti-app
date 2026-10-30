@@ -21,15 +21,15 @@ jobs:
       with:
         channel: 'stable'
 
-    # 🔥 Gradle ক্যাশ পরিষ্কার করার স্টেপ (এরর সমাধানের জন্য)
-    - name: Clean Gradle Cache
-      run: rm -rf ~/.gradle/caches
-
     - name: Recreate Flutter Platform Folders
       run: flutter create .
 
     - name: Install dependencies
       run: flutter pub get
+
+    # 🔥 নতুন যোগ করা হলো: অ্যাপের লোগো/আইকন তৈরি করা
+    - name: Generate App Icons
+      run: dart run flutter_launcher_icons
 
     - name: Add Internet Permission
       run: sed -i 's/<application/<uses-permission android:name="android.permission.INTERNET"\/>\n    <application/' android/app/src/main/AndroidManifest.xml
