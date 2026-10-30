@@ -23,8 +23,10 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
     var res = await ApiService.getTransactions();
     if (res is List) {
       setState(() {
-        // নতুন লেনদেন আগে দেখানোর জন্য রিভার্স করা হলো
-        allTransactions = res.reversed.toList();
+        // 🔥 শুধুমাত্র Paid (পরিশোধিত) লেনদেনগুলো ফিল্টার করে নেওয়া হলো
+        List<dynamic> paidTransactions = res.where((tx) => tx['Status'] == 'Paid').toList();
+        // নতুন লেনদেন আগে দেখানোর জন্য রিভার্স
+        allTransactions = paidTransactions.reversed.toList();
         isLoading = false;
       });
     } else {
@@ -48,13 +50,15 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : allTransactions.isEmpty
-              ? const Center(child: Text("কোনো লেনদেন পাওয়া যায়নি!"))
+              ? const Center(child: Text("কোনো পরিশোধিত লেনদেন পাওয়া যায়নি!"))
               : ListView.builder(
                   padding: const EdgeInsets.all(15),
                   itemCount: allTransactions.length,
                   itemBuilder: (context, index) {
                     var tx = allTransactions[index];
                     String type = tx['Type'].toString();
+                    
+                    // রঙ ও আইকন নির্ধারণ
                     bool isDeposit = type == 'জমা' || type == 'আয়';
                     Color color = isDeposit ? Colors.green : Colors.red;
                     IconData icon = isDeposit ? Icons.arrow_downward : Icons.arrow_upward;
@@ -77,7 +81,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                           children: [
                             Text("সদস্য: ${tx['MemberName']}"),
                             Text("বিবরণ: ${tx['Note'].toString().isEmpty ? 'নেই' : tx['Note']}", style: const TextStyle(fontSize: 12)),
-                            Text("তারিখ: ${tx['Date'].toString().split(' ')[0]}", style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                            Text("তারিখ: ${tx['Date'].toString().split(' ')[0]}", style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
                           ],
                         ),
                         trailing: Text(
