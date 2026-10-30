@@ -206,13 +206,11 @@ class HomeContentState extends State<HomeContent> {
         String paymentMethod = tx['PaymentMethod']?.toString().trim() ?? 'HAND CASH';
         String txMemberName = tx['MemberName'].toString().trim().toLowerCase();
 
-        // মোট সম্পদ হিসাব
         if (status == 'Paid') {
           if (type == 'জমা' || type == 'আয়' || type == 'বিলম্ব ফী') tempTotalAssets += amount;
           else if (type == 'বিনিয়োগ' || type == 'খরচ') tempTotalAssets -= amount;
         }
 
-        // হাতে নগদ হিসাব (শুধু HAND CASH)
         if (status == 'Paid') {
           if (type == 'জমা' || type == 'আয়' || type == 'বিলম্ব ফী') {
             if (paymentMethod == 'HAND CASH') tempCash += amount;
@@ -221,20 +219,17 @@ class HomeContentState extends State<HomeContent> {
           }
         }
 
-        // আজকের জমা ও খরচ
         if (formattedTxDate == todayDate && status == 'Paid') {
           if (type == 'জমা') tempTodayDeposit += amount;
           if (type == 'খরচ') tempTodayExpense += amount;
         }
 
-        // এই মাসের আদায়
         if (formattedTxDate.contains(currentMonth) && type == 'জমা' && status == 'Paid') {
           tempMonthCollection += amount;
           membersWhoPaid.add(txMemberName);
         }
       }
 
-      // কতজন জমা দেয়নি
       int tempPendingCount = 0;
       if (membersRes is List) {
         for (var mem in membersRes) {
@@ -453,7 +448,7 @@ class HomeContentState extends State<HomeContent> {
             ),
             const SizedBox(height: 20),
             
-            // ৭. ৪টি অ্যাকশন বাটন (শুধু অ্যাডমিন দেখবে)
+            // 🔥 ৭. ৪টি অ্যাকশন বাটন (শুধু অ্যাডমিন দেখবে)
             if (userRole == 'Admin') ...[
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 15),
@@ -656,7 +651,6 @@ class HomeContentState extends State<HomeContent> {
     );
   }
 
-  // 🔥 এখানে বাটনে ক্লিক করলে হিস্ট্রি পেজে যাওয়ার লজিক বসানো হলো
   Widget _buildActionButton(BuildContext context, String title, IconData icon, Color color, String type) {
     return Expanded(
       child: InkWell(
@@ -664,7 +658,6 @@ class HomeContentState extends State<HomeContent> {
           if (type == "বিনিয়োগ") {
              await Navigator.push(context, MaterialPageRoute(builder: (c) => InvestmentScreen(userRole: userRole)));
           } else {
-             // জমা, খরচ বা আয়ের ক্ষেত্রে সরাসরি লিস্ট পেজে যাবে
              await Navigator.push(context, MaterialPageRoute(builder: (c) => TransactionListScreen(type: type)));
           }
           fetchDashboardData(); 
