@@ -22,9 +22,14 @@ class _MoreScreenState extends State<MoreScreen> {
   bool _showInvestment = false;
 
   double totalDeposit = 0.0;
-  double totalProfit = 0.0;
+  double myProfitShare = 0.0; // 🔥 প্রজেক্টের ভাগের লাভ
+  double myIncome = 0.0; // অন্য আয় (যদি থাকে)
   double totalInvestment = 0.0;
   int activeProjects = 0;
+  int totalMembers = 0; // মোট সদস্য সংখ্যা
+  
+  List<dynamic> myTransactions = [];
+  List<dynamic> myInvestments = [];
 
   @override
   void initState() { super.initState(); _loadData(); }
@@ -41,36 +46,72 @@ class _MoreScreenState extends State<MoreScreen> {
   }
 
   void _fetchStats() async {
-    var txRes = await ApiService.getTransactions();
-    if (txRes is List) {
-      double tempDeposit = 0.0;
-      for (var tx in txRes) {
-        if (tx['MemberName'].toString().trim() == name.trim()) {
-          double amount = double.tryParse(tx['Amount'].toString()) ?? 0.0;
-          if (tx['Type'] == 'জমা' && tx['Status'] == 'Paid') {
-            tempDeposit += amount;
-          }
-        }
-      }
-      setState(() => totalDeposit = tempDeposit);
+    setState(() => isLoadingStats = true);
+    
+    // ১. সদস্য সংখ্যা বের করা
+    var membersRes = await ApiService.getAllMembers();
+    if (membersRes is List) {
+      totalMembers = membersRes.length;
     }
 
+    // ২. নিজের লেনদেন ফিল্টার করা
+    var txRes = await ApiService.getTransactions();
+    if (txRes is List) {
+      List<dynamic> tempMyTx = txRes.where((tx) => tx['MemberName'].toString().trim() == name.trim()).toList();
+      double tempDeposit = 0.0;
+      double tempIncome = 0.0;
+      
+      for (var tx in tempMyTx) {
+        double amount = double.tryParse(tx['Amount'].toString()) ?? 0.0;
+        if (tx['Status'] == 'Paid') {
+          if (tx['Type'] == 'জমা' || tx['Type'] == 'বিলম্ব ফী') tempDeposit += amount;
+          if (tx['Type'] == 'আয়') tempIncome += amount;
+        }
+      }
+      setState(() {
+        myTransactions = tempMyTx.reversed.toList();
+        totalDeposit = tempDeposit;
+        myIncome = tempIncome;
+      });
+    }
+
+    // ৩. প্রজেক্টের মোট লাভ বের করে সদস্যদের মাঝে ভাগ করা
     var invRes = await ApiService.getInvestments();
     if (invRes is List) {
-      double tempProfit = 0.0;
+      double tempTotalProjectProfit = 0.0;
       double tempInv = 0.0;
       int tempActive = 0;
+      List<dynamic> tempMyInv = [];
+      
       for (var inv in invRes) {
         double profit = double.tryParse(inv['ProfitAmount'].toString()) ?? 0.0;
         double amount = double.tryParse(inv['InvestAmount'].toString()) ?? 0.0;
-        tempProfit += profit;
-        if (inv['Status'] == 'সক্রিয়') { tempActive++; tempInv += amount; }
+        
+        tempTotalProjectProfit += profit; // মোট প্রজেক্ট লাভ
+        
+        if (inv['Status'] == 'সক্রিয়') { 
+          tempActive++; 
+          tempInv += amount; 
+          tempMyInv.add(inv);
+        }
       }
-      setState(() { totalProfit = tempProfit; totalInvestment = tempInv; activeProjects = tempActive; isLoadingStats = false; });
+
+      // 🔥 এখানে মোট লাভকে সদস্য সংখ্যা দিয়ে ভাগ করা হচ্ছে
+      double perMemberProfit = 0.0;
+      if (totalMembers > 0) {
+        perMemberProfit = tempTotalProjectProfit / totalMembers;
+      }
+
+      setState(() { 
+        totalInvestment = tempInv; 
+        activeProjects = tempActive; 
+        myInvestments = tempMyInv;
+        myProfitShare = perMemberProfit; // ভাগ করা লাভ সেভ করা হলো
+        isLoadingStats = false; 
+      });
     } else { setState(() => isLoadingStats = false); }
   }
 
-  // 🔥 প্রোফাইল ছবি আপলোড
   Future<void> _pickAndUploadProfilePic() async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(
@@ -115,31 +156,6 @@ class _MoreScreenState extends State<MoreScreen> {
     }
   }
 
-  // 🔥 ফুল স্ক্রিন ছবি দেখার ডায়ালগ
-  void _showFullImage() {
-    if (profilePicUrl.isEmpty) return;
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: GestureDetector(
-          onTap: () => Navigator.pop(context),
-          child: InteractiveViewer(
-            child: Image.network(
-              profilePicUrl,
-              fit: BoxFit.contain,
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return const Center(child: CircularProgressIndicator());
-              },
-              errorBuilder: (context, error, stackTrace) => const Center(child: Icon(Icons.broken_image, color: Colors.white, size: 50)),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   void _logout() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isLoggedIn', false);
@@ -147,7 +163,6 @@ class _MoreScreenState extends State<MoreScreen> {
     Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const LoginScreen()), (route) => false);
   }
 
-  // 🔥 পিন পরিবর্তনের লজিক (৪-১০ ডিজিট এবং একই অঙ্ক ৪ বার নয়)
   void _showPinChangeDialog() {
     TextEditingController oldPinController = TextEditingController();
     TextEditingController newPinController = TextEditingController();
@@ -169,13 +184,10 @@ class _MoreScreenState extends State<MoreScreen> {
           ElevatedButton(
             onPressed: () async {
               String newPin = newPinController.text.trim();
-              
-              // ভ্যালিডেশন
               if (newPin.length < 4 || newPin.length > 10) {
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("পিন ৪ থেকে ১০ ডিজিটের হতে হবে!"), backgroundColor: Colors.orange));
                 return;
               }
-              // একই সংখ্যা ৪ বার চেক (যেমন: 1111, 2222)
               if (RegExp(r'^(\d)\1{3,9}$').hasMatch(newPin)) {
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("একই সংখ্যা বারবার ব্যবহার করা যাবে না!"), backgroundColor: Colors.red));
                 return;
@@ -197,9 +209,63 @@ class _MoreScreenState extends State<MoreScreen> {
     );
   }
 
+  // বিস্তারিত হিস্ট্রি দেখানোর ফাংশন
+  void _showHistoryDialog(String title, List<dynamic> data, bool isInvestment) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(25))),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        maxChildSize: 0.9,
+        minChildSize: 0.5,
+        expand: false,
+        builder: (_, scrollController) => Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(15),
+              child: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ),
+            const Divider(),
+            Expanded(
+              child: data.isEmpty 
+                ? const Center(child: Text("কোনো ডেটা নেই"))
+                : ListView.builder(
+                    controller: scrollController,
+                    itemCount: data.length,
+                    itemBuilder: (context, index) {
+                      var item = data[index];
+                      if (isInvestment) {
+                        return ListTile(
+                          leading: const Icon(Icons.menu_book, color: Colors.purple),
+                          title: Text(item['ProjectName'].toString()),
+                          subtitle: Text("৳ ${item['InvestAmount']} | লাভ: ৳ ${item['ProfitAmount']}"),
+                          trailing: Text(item['Status'].toString()),
+                        );
+                      } else {
+                        return ListTile(
+                          leading: Icon(item['Type'] == 'জমা' ? Icons.arrow_downward : Icons.arrow_upward, color: item['Type'] == 'জমা' ? Colors.green : Colors.red),
+                          title: Text(item['Type'].toString()),
+                          subtitle: Text(item['Note'].toString()),
+                          trailing: Text("৳ ${item['Amount']}", style: const TextStyle(fontWeight: FontWeight.bold)),
+                        );
+                      }
+                    },
+                  ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     bool isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    // 🔥 মোট লাভ = (প্রজেক্টের ভাগের লাভ + অন্য কোনো আয় থাকলে)
+    double displayTotalProfit = myProfitShare + myIncome;
+
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF5F7FA),
       body: SingleChildScrollView(
@@ -217,7 +283,6 @@ class _MoreScreenState extends State<MoreScreen> {
                         CircleAvatar(
                           radius: 35, 
                           backgroundColor: Colors.white, 
-                          // 🔥 এখানে backgroundImage সরাসরি দেওয়া হয়েছে
                           backgroundImage: profilePicUrl.isNotEmpty ? NetworkImage(profilePicUrl) : null,
                           child: profilePicUrl.isEmpty ? const Icon(Icons.person, size: 40, color: Color(0xFF00796B)) : null
                         ),
@@ -239,11 +304,7 @@ class _MoreScreenState extends State<MoreScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // 🔥 নামের পাশে ছবিতে ক্লিক করলে ফুল স্ক্রিন দেখার আইকন
-                        GestureDetector(
-                          onTap: _showFullImage,
-                          child: Text(name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
-                        ),
+                        Text(name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
                         const SizedBox(height: 5),
                         Text(role == 'Admin' ? "অ্যাডমিন" : "সাধারণ সদস্য", style: const TextStyle(color: Colors.white70, fontSize: 14)),
                       ],
@@ -253,7 +314,6 @@ class _MoreScreenState extends State<MoreScreen> {
               ),
             ),
             
-            // ... (বাকি স্ট্যাটস কার্ড এবং মেনু আগের মতোই থাকবে)
             Transform.translate(
               offset: const Offset(0, -15),
               child: Padding(
@@ -279,13 +339,30 @@ class _MoreScreenState extends State<MoreScreen> {
                       ),
                     ),
                     const SizedBox(height: 15),
+                    
                     Row(
                       children: [
-                        Expanded(child: _buildStatCard("মোট লাভ", "৳ ${totalProfit.toStringAsFixed(0)}", Icons.trending_up, Colors.green, isDark)),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => _showHistoryDialog("আমার লাভের হিস্ট্রি", myTransactions.where((tx) => tx['Type'] == 'আয়').toList(), false),
+                            // 🔥 এখানে displayTotalProfit দেখানো হচ্ছে
+                            child: _buildStatCard("মোট লাভ", "৳ ${displayTotalProfit.toStringAsFixed(0)}", Icons.trending_up, Colors.green, isDark)
+                          ),
+                        ),
                         const SizedBox(width: 10),
-                        Expanded(child: _buildStatCard("মোট জমা", "৳ ${totalDeposit.toStringAsFixed(0)}", Icons.account_balance_wallet, Colors.teal, isDark)),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => _showHistoryDialog("আমার জমার হিস্ট্রি", myTransactions.where((tx) => tx['Type'] == 'জমা' || tx['Type'] == 'বিলম্ব ফী').toList(), false),
+                            child: _buildStatCard("মোট জমা", "৳ ${totalDeposit.toStringAsFixed(0)}", Icons.account_balance_wallet, Colors.teal, isDark)
+                          ),
+                        ),
                         const SizedBox(width: 10),
-                        Expanded(child: _buildStatCard("সক্রিয় প্রকল্প", "$activeProjects টি", Icons.layers, Colors.orange, isDark)),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => _showHistoryDialog("আমার বিনিয়োগ", myInvestments, true),
+                            child: _buildStatCard("সক্রিয় প্রকল্প", "$activeProjects টি", Icons.layers, Colors.orange, isDark)
+                          ),
+                        ),
                       ],
                     ),
                   ],
