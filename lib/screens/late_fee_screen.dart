@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 
 class LateFeeScreen extends StatefulWidget {
@@ -13,15 +14,23 @@ class _LateFeeScreenState extends State<LateFeeScreen> {
   List<dynamic> lateFees = [];
   List<dynamic> members = [];
   bool isLoading = true;
+  String userRole = "Member";
   
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
   String? _selectedMember;
+  String _status = "Unpaid"; 
 
   @override
   void initState() {
     super.initState();
+    _loadUser();
     _fetchData();
+  }
+
+  void _loadUser() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() => userRole = prefs.getString('userRole') ?? "Member");
   }
 
   void _fetchData() async {
@@ -53,7 +62,7 @@ class _LateFeeScreenState extends State<LateFeeScreen> {
       amount: _amountController.text.trim(),
       note: _noteController.text.trim().isEmpty ? 'বিলম্ব ফী' : _noteController.text.trim(),
       memberName: _selectedMember!,
-      status: 'Unpaid',
+      status: _status, 
       date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
       paymentMethod: 'HAND CASH', 
     );
@@ -72,70 +81,54 @@ class _LateFeeScreenState extends State<LateFeeScreen> {
     }
   }
 
-  // অটো বকেয়া জেনারেট করার ফাংশন (এডমিনের জন্য)
-  void _generateAutoDue() async {
-    setState(() => isLoading = true);
-    var res = await ApiService.generateAutoDue();
-    setState(() => isLoading = false);
-
-    if (res['status'] == "success") {
-      _fetchData();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res['message'] ?? "সফলভাবে বকেয়া তৈরি হয়েছে!"), backgroundColor: Colors.green));
-    } else {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res['message'] ?? "সমস্যা"), backgroundColor: Colors.red));
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
-      appBar: AppBar(
-        title: const Text("বিলম্ব ফী"), 
-        backgroundColor: const Color(0xFF00796B), 
-        foregroundColor: Colors.white,
-        actions: [
-          // 🔥 এখানে tooltip ঠিক করা হয়েছে
-          IconButton(
-            tooltip: "মাসিক বকেয়া তৈরি করুন",
-            icon: const Icon(Icons.autorenew),
-            onPressed: _generateAutoDue,
-          )
-        ],
-      ),
+      appBar: AppBar(title: const Text("বিলম্ব ফী"), backgroundColor: const Color(0xFF00796B), foregroundColor: Colors.white),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(15),
-                  color: Colors.white,
-                  child: Column(
-                    children: [
-                      DropdownButtonFormField<String>(
-                        decoration: InputDecoration(labelText: "সদস্য নির্বাচন করুন", border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))),
-                        value: _selectedMember,
-                        items: members.map((m) => DropdownMenuItem(value: m['Name'].toString(), child: Text(m['Name'].toString()))).toList(),
-                        onChanged: (val) => setState(() => _selectedMember = val),
-                      ),
-                      const SizedBox(height: 10),
-                      TextField(controller: _amountController, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: "পরিমাণ (৳)", border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)))),
-                      const SizedBox(height: 10),
-                      TextField(controller: _noteController, decoration: InputDecoration(labelText: "কারণ / নোট", border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)))),
-                      const SizedBox(height: 10),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00796B)),
-                          onPressed: _addLateFee,
-                          child: const Text("যোগ করুন", style: TextStyle(color: Colors.white)),
+                // 🔥 শুধু অ্যাডমিন ফর্ম দেখবে
+                if (userRole == 'Admin')
+                  Container(
+                    padding: const EdgeInsets.all(15),
+                    color: Colors.white,
+                    child: Column(
+                      children: [
+                        DropdownButtonFormField<String>(
+                          decoration: InputDecoration(labelText: "সদস্য নির্বাচন করুন", border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))),
+                          value: _selectedMember,
+                          items: members.map((m) => DropdownMenuItem(value: m['Name'].toString(), child: Text(m['Name'].toString()))).toList(),
+                          onChanged: (val) => setState(() => _selectedMember = val),
                         ),
-                      )
-                    ],
+                        const SizedBox(height: 10),
+                        TextField(controller: _amountController, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: "পরিমাণ (৳)", border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)))),
+                        const SizedBox(height: 10),
+                        TextField(controller: _noteController, decoration: InputDecoration(labelText: "কারণ / নোট", border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)))),
+                        const SizedBox(height: 10),
+                        DropdownButtonFormField<String>(
+                          value: _status,
+                          decoration: InputDecoration(labelText: "স্ট্যাটাস (Paid/Unpaid)", border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))),
+                          items: const [
+                            DropdownMenuItem(value: "Paid", child: Text("পরিশোধিত (Paid)")),
+                            DropdownMenuItem(value: "Unpaid", child: Text("বাকি (Unpaid)")),
+                          ],
+                          onChanged: (val) => setState(() => _status = val!),
+                        ),
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00796B)),
+                            onPressed: _addLateFee,
+                            child: const Text("যোগ করুন", style: TextStyle(color: Colors.white)),
+                          ),
+                        )
+                      ],
+                    ),
                   ),
-                ),
                 Expanded(
                   child: lateFees.isEmpty
                       ? const Center(child: Text("কোনো বিলম্ব ফী নেই"))
@@ -144,13 +137,20 @@ class _LateFeeScreenState extends State<LateFeeScreen> {
                           itemCount: lateFees.length,
                           itemBuilder: (context, index) {
                             var fee = lateFees[index];
+                            bool isPaid = fee['Status'] == 'Paid';
                             return Card(
                               margin: const EdgeInsets.only(bottom: 10),
                               child: ListTile(
-                                leading: const Icon(Icons.warning, color: Colors.red),
+                                leading: Icon(Icons.warning, color: isPaid ? Colors.green : Colors.red),
                                 title: Text(fee['MemberName'].toString(), style: const TextStyle(fontWeight: FontWeight.bold)),
                                 subtitle: Text(fee['Note'].toString()),
-                                trailing: Text("৳ ${fee['Amount']}", style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                                trailing: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text("৳ ${fee['Amount']}", style: TextStyle(color: isPaid ? Colors.green : Colors.red, fontWeight: FontWeight.bold)),
+                                    Text(isPaid ? "Paid" : "Unpaid", style: TextStyle(fontSize: 10, color: isPaid ? Colors.green : Colors.red)),
+                                  ],
+                                ),
                               ),
                             );
                           },
