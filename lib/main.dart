@@ -4,7 +4,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 
-// ডার্ক মোডের জন্য গ্লোবাল নোটিফায়ার
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 
 void main() async {
@@ -26,7 +25,7 @@ class MyApp extends StatelessWidget {
       builder: (context, currentMode, child) {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
-          title: 'বিনিয়োগ উদ্যোক্তা',
+          title: 'বিনিয়োগ উদ্যোক্তা', // 🔥 এখানে নাম নিশ্চিত করা হলো
           themeMode: currentMode,
           theme: ThemeData(
             brightness: Brightness.light,
