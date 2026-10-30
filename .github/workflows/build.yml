@@ -27,9 +27,12 @@ jobs:
     - name: Install dependencies
       run: flutter pub get
 
-    # 🔥 নতুন যোগ করা হলো: অ্যাপের লোগো/আইকন তৈরি করা
     - name: Generate App Icons
       run: dart run flutter_launcher_icons
+
+    # 🔥 অ্যাপের নাম 'বিনিয়োগ উদ্যোক্তা' করে দেওয়ার স্টেপ
+    - name: Change App Name
+      run: sed -i 's/android:label="somiti_app"/android:label="বিনিয়োগ উদ্যোক্তা"/g' android/app/src/main/AndroidManifest.xml
 
     - name: Add Internet Permission
       run: sed -i 's/<application/<uses-permission android:name="android.permission.INTERNET"\/>\n    <application/' android/app/src/main/AndroidManifest.xml
