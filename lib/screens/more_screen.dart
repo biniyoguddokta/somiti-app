@@ -22,11 +22,11 @@ class _MoreScreenState extends State<MoreScreen> {
   bool _showInvestment = false;
 
   double totalDeposit = 0.0;
-  double myProfitShare = 0.0; // 🔥 প্রজেক্টের ভাগের লাভ
-  double myIncome = 0.0; // অন্য আয় (যদি থাকে)
+  double myProfitShare = 0.0; 
+  double myIncome = 0.0; 
   double totalInvestment = 0.0;
   int activeProjects = 0;
-  int totalMembers = 0; // মোট সদস্য সংখ্যা
+  int totalMembers = 0; 
   
   List<dynamic> myTransactions = [];
   List<dynamic> myInvestments = [];
@@ -48,13 +48,11 @@ class _MoreScreenState extends State<MoreScreen> {
   void _fetchStats() async {
     setState(() => isLoadingStats = true);
     
-    // ১. সদস্য সংখ্যা বের করা
     var membersRes = await ApiService.getAllMembers();
     if (membersRes is List) {
       totalMembers = membersRes.length;
     }
 
-    // ২. নিজের লেনদেন ফিল্টার করা
     var txRes = await ApiService.getTransactions();
     if (txRes is List) {
       List<dynamic> tempMyTx = txRes.where((tx) => tx['MemberName'].toString().trim() == name.trim()).toList();
@@ -75,7 +73,6 @@ class _MoreScreenState extends State<MoreScreen> {
       });
     }
 
-    // ৩. প্রজেক্টের মোট লাভ বের করে সদস্যদের মাঝে ভাগ করা
     var invRes = await ApiService.getInvestments();
     if (invRes is List) {
       double tempTotalProjectProfit = 0.0;
@@ -87,7 +84,7 @@ class _MoreScreenState extends State<MoreScreen> {
         double profit = double.tryParse(inv['ProfitAmount'].toString()) ?? 0.0;
         double amount = double.tryParse(inv['InvestAmount'].toString()) ?? 0.0;
         
-        tempTotalProjectProfit += profit; // মোট প্রজেক্ট লাভ
+        tempTotalProjectProfit += profit;
         
         if (inv['Status'] == 'সক্রিয়') { 
           tempActive++; 
@@ -96,7 +93,6 @@ class _MoreScreenState extends State<MoreScreen> {
         }
       }
 
-      // 🔥 এখানে মোট লাভকে সদস্য সংখ্যা দিয়ে ভাগ করা হচ্ছে
       double perMemberProfit = 0.0;
       if (totalMembers > 0) {
         perMemberProfit = tempTotalProjectProfit / totalMembers;
@@ -106,7 +102,7 @@ class _MoreScreenState extends State<MoreScreen> {
         totalInvestment = tempInv; 
         activeProjects = tempActive; 
         myInvestments = tempMyInv;
-        myProfitShare = perMemberProfit; // ভাগ করা লাভ সেভ করা হলো
+        myProfitShare = perMemberProfit; 
         isLoadingStats = false; 
       });
     } else { setState(() => isLoadingStats = false); }
@@ -142,8 +138,10 @@ class _MoreScreenState extends State<MoreScreen> {
 
           if (myData != null && myData['ProfilePicUrl'] != null) {
             SharedPreferences prefs = await SharedPreferences.getInstance();
-            await prefs.setString('userPic', myData['ProfilePicUrl']);
-            setState(() => profilePicUrl = myData['ProfilePicUrl']);
+            // 🔥 ক্যাশ এড়ানোর জন্য লিংকের শেষে সময় যোগ করা হলো
+            String newPicUrl = "${myData['ProfilePicUrl']}&t=${DateTime.now().millisecondsSinceEpoch}";
+            await prefs.setString('userPic', newPicUrl);
+            setState(() => profilePicUrl = newPicUrl);
           }
         }
         if (!mounted) return;
@@ -164,6 +162,7 @@ class _MoreScreenState extends State<MoreScreen> {
   }
 
   void _showPinChangeDialog() {
+    // ... (আগের পিন চেঞ্জ ডায়ালগ কোড একই থাকবে)
     TextEditingController oldPinController = TextEditingController();
     TextEditingController newPinController = TextEditingController();
 
@@ -209,8 +208,8 @@ class _MoreScreenState extends State<MoreScreen> {
     );
   }
 
-  // বিস্তারিত হিস্ট্রি দেখানোর ফাংশন
   void _showHistoryDialog(String title, List<dynamic> data, bool isInvestment) {
+    // ... (আগের বিস্তারিত হিস্ট্রি কোড একই থাকবে)
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -259,11 +258,52 @@ class _MoreScreenState extends State<MoreScreen> {
     );
   }
 
+  // 🔥 ছবিতে ক্লিক করলে ফুল স্ক্রিনে দেখার ফাংশন
+  void _showFullImage() {
+    if (profilePicUrl.isEmpty) return;
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.zero,
+        child: GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: InteractiveViewer(
+            panEnabled: true,
+            minScale: 1,
+            maxScale: 5,
+            child: Container(
+              width: double.infinity,
+              height: double.infinity,
+              color: Colors.black87,
+              child: Image.network(
+                profilePicUrl,
+                fit: BoxFit.contain,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return const Center(child: CircularProgressIndicator(color: Colors.white));
+                },
+                errorBuilder: (context, error, stackTrace) => const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.broken_image, color: Colors.white, size: 60),
+                      SizedBox(height: 10),
+                      Text("ছবিটি লোড করা যাচ্ছে না", style: TextStyle(color: Colors.white)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    // 🔥 মোট লাভ = (প্রজেক্টের ভাগের লাভ + অন্য কোনো আয় থাকলে)
     double displayTotalProfit = myProfitShare + myIncome;
 
     return Scaffold(
@@ -276,24 +316,44 @@ class _MoreScreenState extends State<MoreScreen> {
               decoration: const BoxDecoration(color: Color(0xFF00796B), borderRadius: BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20))),
               child: Row(
                 children: [
+                  // 🔥 প্রোফাইল ছবিতে ক্লিক করলে ফুল স্ক্রিনে দেখাবে
                   GestureDetector(
-                    onTap: _pickAndUploadProfilePic,
+                    onTap: profilePicUrl.isNotEmpty ? _showFullImage : _pickAndUploadProfilePic,
                     child: Stack(
                       children: [
                         CircleAvatar(
                           radius: 35, 
                           backgroundColor: Colors.white, 
-                          backgroundImage: profilePicUrl.isNotEmpty ? NetworkImage(profilePicUrl) : null,
-                          child: profilePicUrl.isEmpty ? const Icon(Icons.person, size: 40, color: Color(0xFF00796B)) : null
+                          // 🔥 এখানে NetworkImage এর সাথে errorBuilder-এর মতো কাজ করবে না, তাই child ব্যবহার করা হলো
+                          child: ClipOval(
+                            child: profilePicUrl.isNotEmpty 
+                              ? Image.network(
+                                  profilePicUrl,
+                                  width: 70,
+                                  height: 70,
+                                  fit: BoxFit.cover,
+                                  loadingBuilder: (context, child, progress) {
+                                    if (progress == null) return child;
+                                    return const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2));
+                                  },
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return const Icon(Icons.person, size: 40, color: Color(0xFF00796B));
+                                  },
+                                )
+                              : const Icon(Icons.person, size: 40, color: Color(0xFF00796B)),
+                          ),
                         ),
                         Positioned(
                           bottom: 0, right: 0,
-                          child: Container(
-                            padding: const EdgeInsets.all(5),
-                            decoration: const BoxDecoration(color: Colors.blue, shape: BoxShape.circle),
-                            child: isUploading 
-                              ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                              : const Icon(Icons.camera_alt, size: 15, color: Colors.white),
+                          child: GestureDetector(
+                            onTap: _pickAndUploadProfilePic,
+                            child: Container(
+                              padding: const EdgeInsets.all(5),
+                              decoration: const BoxDecoration(color: Colors.blue, shape: BoxShape.circle),
+                              child: isUploading 
+                                ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                : const Icon(Icons.camera_alt, size: 15, color: Colors.white),
+                            ),
                           ),
                         )
                       ],
@@ -314,6 +374,7 @@ class _MoreScreenState extends State<MoreScreen> {
               ),
             ),
             
+            // ... (বাকি স্ট্যাটস কার্ড এবং মেনু অপশন আগের মতোই থাকবে)
             Transform.translate(
               offset: const Offset(0, -15),
               child: Padding(
@@ -345,7 +406,6 @@ class _MoreScreenState extends State<MoreScreen> {
                         Expanded(
                           child: GestureDetector(
                             onTap: () => _showHistoryDialog("আমার লাভের হিস্ট্রি", myTransactions.where((tx) => tx['Type'] == 'আয়').toList(), false),
-                            // 🔥 এখানে displayTotalProfit দেখানো হচ্ছে
                             child: _buildStatCard("মোট লাভ", "৳ ${displayTotalProfit.toStringAsFixed(0)}", Icons.trending_up, Colors.green, isDark)
                           ),
                         ),
