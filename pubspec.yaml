@@ -23,7 +23,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^2.0.0
-  flutter_launcher_icons: ^0.13.1 # 🔥 আইকন পরিবর্তনের জন্য
+  flutter_launcher_icons: ^0.13.1
 
 flutter_launcher_icons:
   android: "launcher_icon"
@@ -36,4 +36,4 @@ dependency_overrides:
 flutter:
   uses-material-design: true
   assets:
-    - assets/ # এখানে আপনার login_banner.png থাকবে
+    - assets/
