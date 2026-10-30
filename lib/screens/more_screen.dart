@@ -48,11 +48,13 @@ class _MoreScreenState extends State<MoreScreen> {
   void _fetchStats() async {
     setState(() => isLoadingStats = true);
     
+    // ১. সদস্য সংখ্যা বের করা
     var membersRes = await ApiService.getAllMembers();
     if (membersRes is List) {
       totalMembers = membersRes.length;
     }
 
+    // ২. নিজের লেনদেন ফিল্টার করা
     var txRes = await ApiService.getTransactions();
     if (txRes is List) {
       List<dynamic> tempMyTx = txRes.where((tx) => tx['MemberName'].toString().trim() == name.trim()).toList();
@@ -73,6 +75,7 @@ class _MoreScreenState extends State<MoreScreen> {
       });
     }
 
+    // ৩. প্রজেক্টের মোট লাভ বের করে সদস্যদের মাঝে ভাগ করা
     var invRes = await ApiService.getInvestments();
     if (invRes is List) {
       double tempTotalProjectProfit = 0.0;
@@ -84,7 +87,7 @@ class _MoreScreenState extends State<MoreScreen> {
         double profit = double.tryParse(inv['ProfitAmount'].toString()) ?? 0.0;
         double amount = double.tryParse(inv['InvestAmount'].toString()) ?? 0.0;
         
-        tempTotalProjectProfit += profit;
+        tempTotalProjectProfit += profit; 
         
         if (inv['Status'] == 'সক্রিয়') { 
           tempActive++; 
@@ -138,7 +141,6 @@ class _MoreScreenState extends State<MoreScreen> {
 
           if (myData != null && myData['ProfilePicUrl'] != null) {
             SharedPreferences prefs = await SharedPreferences.getInstance();
-            // 🔥 ক্যাশ এড়ানোর জন্য লিংকের শেষে সময় যোগ করা হলো
             String newPicUrl = "${myData['ProfilePicUrl']}&t=${DateTime.now().millisecondsSinceEpoch}";
             await prefs.setString('userPic', newPicUrl);
             setState(() => profilePicUrl = newPicUrl);
@@ -162,7 +164,6 @@ class _MoreScreenState extends State<MoreScreen> {
   }
 
   void _showPinChangeDialog() {
-    // ... (আগের পিন চেঞ্জ ডায়ালগ কোড একই থাকবে)
     TextEditingController oldPinController = TextEditingController();
     TextEditingController newPinController = TextEditingController();
 
@@ -209,7 +210,6 @@ class _MoreScreenState extends State<MoreScreen> {
   }
 
   void _showHistoryDialog(String title, List<dynamic> data, bool isInvestment) {
-    // ... (আগের বিস্তারিত হিস্ট্রি কোড একই থাকবে)
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -316,15 +316,15 @@ class _MoreScreenState extends State<MoreScreen> {
               decoration: const BoxDecoration(color: Color(0xFF00796B), borderRadius: BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20))),
               child: Row(
                 children: [
-                  // 🔥 প্রোফাইল ছবিতে ক্লিক করলে ফুল স্ক্রিনে দেখাবে
+                  // 🔥 প্রোফাইল ছবি লোড করার সঠিক ও নিরাপদ উপায়
                   GestureDetector(
                     onTap: profilePicUrl.isNotEmpty ? _showFullImage : _pickAndUploadProfilePic,
                     child: Stack(
                       children: [
-                        CircleAvatar(
-                          radius: 35, 
-                          backgroundColor: Colors.white, 
-                          // 🔥 এখানে NetworkImage এর সাথে errorBuilder-এর মতো কাজ করবে না, তাই child ব্যবহার করা হলো
+                        Container(
+                          width: 70,
+                          height: 70,
+                          decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
                           child: ClipOval(
                             child: profilePicUrl.isNotEmpty 
                               ? Image.network(
@@ -334,7 +334,7 @@ class _MoreScreenState extends State<MoreScreen> {
                                   fit: BoxFit.cover,
                                   loadingBuilder: (context, child, progress) {
                                     if (progress == null) return child;
-                                    return const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2));
+                                    return const Center(child: CircularProgressIndicator(strokeWidth: 2));
                                   },
                                   errorBuilder: (context, error, stackTrace) {
                                     return const Icon(Icons.person, size: 40, color: Color(0xFF00796B));
@@ -374,7 +374,6 @@ class _MoreScreenState extends State<MoreScreen> {
               ),
             ),
             
-            // ... (বাকি স্ট্যাটস কার্ড এবং মেনু অপশন আগের মতোই থাকবে)
             Transform.translate(
               offset: const Offset(0, -15),
               child: Padding(
