@@ -25,7 +25,7 @@ class MyApp extends StatelessWidget {
       builder: (context, currentMode, child) {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
-          title: 'বিনিয়োগ উদ্যোক্তা', // 🔥 এখানে নাম নিশ্চিত করা হলো
+          title: 'বিনিয়োগ উদ্যোক্তা', // 🔥 অ্যাপের নাম
           themeMode: currentMode,
           theme: ThemeData(
             brightness: Brightness.light,
