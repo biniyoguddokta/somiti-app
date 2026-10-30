@@ -55,6 +55,18 @@ class _LateFeeScreenState extends State<LateFeeScreen> {
       return;
     }
 
+    // 🔥 চেক করা হচ্ছে এই মাসে এই সদস্যের বিলম্ব ফী আগে দেওয়া হয়েছে কি না
+    String currentMonth = DateFormat('yyyy-MM').format(DateTime.now());
+    bool alreadyPaid = lateFees.any((tx) => 
+      tx['MemberName'].toString().trim() == _selectedMember!.trim() &&
+      tx['Date'].toString().contains(currentMonth)
+    );
+
+    if (alreadyPaid) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("$_selectedMember এই মাসে ইতিমধ্যে বিলম্ব ফী দিয়েছেন!"), backgroundColor: Colors.red));
+      return;
+    }
+
     setState(() => isLoading = true);
     
     var res = await ApiService.addTransaction(
@@ -90,7 +102,6 @@ class _LateFeeScreenState extends State<LateFeeScreen> {
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
-                // 🔥 শুধু অ্যাডমিন ফর্ম দেখবে
                 if (userRole == 'Admin')
                   Container(
                     padding: const EdgeInsets.all(15),
@@ -144,11 +155,18 @@ class _LateFeeScreenState extends State<LateFeeScreen> {
                                 leading: Icon(Icons.warning, color: isPaid ? Colors.green : Colors.red),
                                 title: Text(fee['MemberName'].toString(), style: const TextStyle(fontWeight: FontWeight.bold)),
                                 subtitle: Text(fee['Note'].toString()),
+                                // 🔥 Paid হলে শুধু Paid এবং তারিখ দেখাবে, Unpaid থাকবে না
                                 trailing: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
                                     Text("৳ ${fee['Amount']}", style: TextStyle(color: isPaid ? Colors.green : Colors.red, fontWeight: FontWeight.bold)),
-                                    Text(isPaid ? "Paid" : "Unpaid", style: TextStyle(fontSize: 10, color: isPaid ? Colors.green : Colors.red)),
+                                    if (isPaid) ...[
+                                      const Text("Paid", style: TextStyle(fontSize: 10, color: Colors.green)),
+                                      Text(fee['Date'].toString().split(' ')[0], style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                                    ] else ...[
+                                      const Text("Unpaid", style: TextStyle(fontSize: 10, color: Colors.red)),
+                                    ]
                                   ],
                                 ),
                               ),
