@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 
 class ConstitutionScreen extends StatefulWidget {
@@ -11,11 +12,18 @@ class ConstitutionScreen extends StatefulWidget {
 class _ConstitutionScreenState extends State<ConstitutionScreen> {
   List<dynamic> pages = [];
   bool isLoading = true;
+  String userRole = "Member";
 
   @override
   void initState() {
     super.initState();
+    _loadUser();
     _fetchData();
+  }
+
+  void _loadUser() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() => userRole = prefs.getString('userRole') ?? "Member");
   }
 
   void _fetchData() async {
@@ -26,6 +34,43 @@ class _ConstitutionScreenState extends State<ConstitutionScreen> {
     } else {
       setState(() => isLoading = false);
     }
+  }
+
+  void _showAddDialog() {
+    TextEditingController titleController = TextEditingController();
+    TextEditingController contentController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("নতুন ধারা যোগ করুন"),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(controller: titleController, decoration: const InputDecoration(labelText: "ধারার হেডলাইন")),
+              const SizedBox(height: 10),
+              TextField(controller: contentController, maxLines: 4, decoration: const InputDecoration(labelText: "ধারার বিস্তারিত নোট")),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("বাতিল")),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00796B)),
+            onPressed: () async {
+              if (titleController.text.isNotEmpty) {
+                setState(() => isLoading = true);
+                await ApiService.addConstitution(title: titleController.text, content: contentController.text);
+                Navigator.pop(context);
+                _fetchData();
+              }
+            },
+            child: const Text("সেভ", style: TextStyle(color: Colors.white)),
+          )
+        ],
+      ),
+    );
   }
 
   @override
@@ -63,6 +108,13 @@ class _ConstitutionScreenState extends State<ConstitutionScreen> {
                     );
                   },
                 ),
+      floatingActionButton: userRole == 'Admin' 
+        ? FloatingActionButton(
+            backgroundColor: const Color(0xFF00796B),
+            onPressed: _showAddDialog,
+            child: const Icon(Icons.add, color: Colors.white),
+          )
+        : null,
     );
   }
 }
