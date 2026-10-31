@@ -55,6 +55,22 @@ class _LateFeeScreenState extends State<LateFeeScreen> {
     }
   }
 
+  // 🔥 ম্যানুয়ালি টেস্ট করার জন্য এই ফাংশনটি যোগ করা হলো
+  void _generateAutoDue() async {
+    setState(() => isLoading = true);
+    var res = await ApiService.generateAutoDue(); 
+    setState(() => isLoading = false);
+
+    if (res['status'] == "success") {
+      _fetchData();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res['message'] ?? "সফলভাবে বকেয়া তৈরি হয়েছে!"), backgroundColor: Colors.green));
+    } else {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res['message'] ?? "সমস্যা"), backgroundColor: Colors.red));
+    }
+  }
+
   void _addLateFee() async {
     if (_selectedMember == null || _amountController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("সদস্য এবং পরিমাণ নির্বাচন করুন"), backgroundColor: Colors.orange));
@@ -102,7 +118,20 @@ class _LateFeeScreenState extends State<LateFeeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
-      appBar: AppBar(title: const Text("বিলম্ব ফী"), backgroundColor: const Color(0xFF00796B), foregroundColor: Colors.white),
+      appBar: AppBar(
+        title: const Text("বিলম্ব ফী"), 
+        backgroundColor: const Color(0xFF00796B), 
+        foregroundColor: Colors.white,
+        actions: [
+          // 🔥 অ্যাডমিনের জন্য ম্যানুয়ালি বকেয়া জেনারেট করার বাটন
+          if (userRole == 'Admin')
+            IconButton(
+              tooltip: "মাসিক বকেয়া জেনারেট করুন",
+              icon: const Icon(Icons.autorenew),
+              onPressed: _generateAutoDue,
+            )
+        ],
+      ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
