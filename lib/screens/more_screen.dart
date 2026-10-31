@@ -40,7 +40,8 @@ class _MoreScreenState extends State<MoreScreen> {
       name = prefs.getString('userName') ?? "User";
       role = prefs.getString('userRole') ?? "Member";
       phone = prefs.getString('userPhone') ?? "";
-      // 🔥 ক্যাশ এড়ানোর জন্য টাইম স্ট্যাম্প
+      
+      // ক্যাশ এড়ানোর জন্য টাইম স্ট্যাম্প
       String savedPic = prefs.getString('userPic') ?? "";
       if (savedPic.isNotEmpty) {
         profilePicUrl = "$savedPic&t=${DateTime.now().millisecondsSinceEpoch}";
@@ -166,48 +167,88 @@ class _MoreScreenState extends State<MoreScreen> {
     Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const LoginScreen()), (route) => false);
   }
 
+  // 🔥 পিন পরিবর্তনের ফাংশন (পুরোনো পিন চেক ও কনফার্ম পিনসহ)
   void _showPinChangeDialog() {
     TextEditingController oldPinController = TextEditingController();
     TextEditingController newPinController = TextEditingController();
+    TextEditingController confirmPinController = TextEditingController();
+
+    String currentDbPin = "";
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("পিন পরিবর্তন করুন"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: oldPinController, obscureText: true, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "পুরোনো পিন")),
-            const SizedBox(height: 10),
-            TextField(controller: newPinController, obscureText: true, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "নতুন পিন (৪-১০ ডিজিট)")),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("বাতিল")),
-          ElevatedButton(
-            onPressed: () async {
-              String newPin = newPinController.text.trim();
-              if (newPin.length < 4 || newPin.length > 10) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("পিন ৪ থেকে ১০ ডিজিটের হতে হবে!"), backgroundColor: Colors.orange));
-                return;
-              }
-              if (RegExp(r'^(\d)\1{3,9}$').hasMatch(newPin)) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("একই সংখ্যা বারবার ব্যবহার করা যাবে না!"), backgroundColor: Colors.red));
-                return;
-              }
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: const Text("পিন পরিবর্তন করুন"),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(controller: oldPinController, obscureText: true, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "পুরোনো পিন")),
+                  const SizedBox(height: 10),
+                  TextField(controller: newPinController, obscureText: true, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "নতুন পিন (৪-১০ ডিজিট)")),
+                  const SizedBox(height: 10),
+                  TextField(controller: confirmPinController, obscureText: true, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "নতুন পিন কনফার্ম করুন")),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text("বাতিল")),
+              ElevatedButton(
+                onPressed: () async {
+                  String oldPin = oldPinController.text.trim();
+                  String newPin = newPinController.text.trim();
+                  String confirmPin = confirmPinController.text.trim();
 
-              if (oldPinController.text.isNotEmpty) {
-                var res = await ApiService.updatePin(phone: phone, newPin: newPin);
-                if (res['status'] == 'success' || res['message'] == "Updated" || res['message'].contains("302")) {
-                  if (!mounted) return;
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("পিন সফলভাবে আপডেট হয়েছে!"), backgroundColor: Colors.green));
-                }
-              }
-            },
-            child: const Text("সেভ"),
-          )
-        ],
+                  if (newPin.length < 4 || newPin.length > 10) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("নতুন পিন ৪ থেকে ১০ ডিজিটের হতে হবে!"), backgroundColor: Colors.orange));
+                    return;
+                  }
+                  if (RegExp(r'^(\d)\1{3,9}$').hasMatch(newPin)) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("একই সংখ্যা বারবার ব্যবহার করা যাবে না!"), backgroundColor: Colors.red));
+                    return;
+                  }
+                  if (newPin != confirmPin) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("নতুন পিন এবং কনফার্ম পিন মিলছে না!"), backgroundColor: Colors.red));
+                    return;
+                  }
+
+                  setDialogState(() {});
+                  var members = await ApiService.getAllMembers();
+                  if (members is List) {
+                    String cleanPhone = phone.startsWith('0') ? phone.substring(1) : phone;
+                    var myData = members.firstWhere((m) {
+                      String mPhone = m['Phone'].toString();
+                      if(mPhone.startsWith('0')) mPhone = mPhone.substring(1);
+                      return mPhone == cleanPhone;
+                    }, orElse: () => null);
+
+                    if (myData != null) {
+                      currentDbPin = myData['PIN'].toString();
+                    }
+                  }
+
+                  if (oldPin != currentDbPin) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("পুরোনো পিনটি সঠিক নয়!"), backgroundColor: Colors.red));
+                    return;
+                  }
+
+                  var res = await ApiService.updatePin(phone: phone, newPin: newPin);
+                  if (res['status'] == 'success' || res['message'] == "Updated" || res['message'].contains("302")) {
+                    if (!mounted) return;
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("পিন সফলভাবে আপডেট হয়েছে!"), backgroundColor: Colors.green));
+                  } else {
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("পিন আপডেটে সমস্যা হয়েছে!"), backgroundColor: Colors.red));
+                  }
+                },
+                child: const Text("সেভ"),
+              )
+            ],
+          );
+        }
       ),
     );
   }
@@ -261,7 +302,6 @@ class _MoreScreenState extends State<MoreScreen> {
     );
   }
 
-  // 🔥 ছবিতে ক্লিক করলে ফুল স্ক্রিনে দেখার ফাংশন
   void _showFullImage() {
     if (profilePicUrl.isEmpty) return;
     showDialog(
@@ -319,7 +359,6 @@ class _MoreScreenState extends State<MoreScreen> {
               decoration: const BoxDecoration(color: Color(0xFF00796B), borderRadius: BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20))),
               child: Row(
                 children: [
-                  // 🔥 প্রোফাইল ছবি লোড করার সঠিক ও নিরাপদ উপায়
                   GestureDetector(
                     onTap: profilePicUrl.isNotEmpty ? _showFullImage : _pickAndUploadProfilePic,
                     child: Stack(
