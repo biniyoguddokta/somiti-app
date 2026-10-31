@@ -40,7 +40,13 @@ class _LateFeeScreenState extends State<LateFeeScreen> {
     
     if (res is List && memRes is List) {
       setState(() {
-        lateFees = res.where((tx) => tx['Type'] == 'বিলম্ব ফী').toList().reversed.toList();
+        // 🔥 'বিলম্ব ফী' এবং 'বকেয়া' (অটো) দুটোই ফিল্টার করা হলো
+        lateFees = res.where((tx) {
+          String type = tx['Type'].toString();
+          String note = tx['Note'].toString();
+          return type == 'বিলম্ব ফী' || (type == 'বকেয়া' && note.contains('অটো'));
+        }).toList().reversed.toList();
+        
         members = memRes;
         isLoading = false;
       });
@@ -55,7 +61,6 @@ class _LateFeeScreenState extends State<LateFeeScreen> {
       return;
     }
 
-    // 🔥 চেক করা হচ্ছে এই মাসে এই সদস্যের বিলম্ব ফী আগে দেওয়া হয়েছে কি না
     String currentMonth = DateFormat('yyyy-MM').format(DateTime.now());
     bool alreadyPaid = lateFees.any((tx) => 
       tx['MemberName'].toString().trim() == _selectedMember!.trim() &&
@@ -155,7 +160,6 @@ class _LateFeeScreenState extends State<LateFeeScreen> {
                                 leading: Icon(Icons.warning, color: isPaid ? Colors.green : Colors.red),
                                 title: Text(fee['MemberName'].toString(), style: const TextStyle(fontWeight: FontWeight.bold)),
                                 subtitle: Text(fee['Note'].toString()),
-                                // 🔥 Paid হলে শুধু Paid এবং তারিখ দেখাবে, Unpaid থাকবে না
                                 trailing: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   crossAxisAlignment: CrossAxisAlignment.end,
