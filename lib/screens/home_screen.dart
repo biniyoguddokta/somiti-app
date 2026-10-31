@@ -37,6 +37,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+
   final GlobalKey<HomeContentState> _homeKey =
       GlobalKey<HomeContentState>();
 
@@ -195,6 +196,7 @@ class HomeContentState extends State<HomeContent> {
   bool _isBalanceVisible = false;
 
   double totalAssets = 0.0;
+
   Timer? _balanceTimer;
 
   bool isBengali = true;
@@ -210,7 +212,7 @@ class HomeContentState extends State<HomeContent> {
   List<dynamic> recentTransactions = [];
 
   String latestNotice =
-      "বিনিয়োগ উদ্যেক্তা অ্যাপে স্বাগতম! নতুন আপডেট পেতে চোখ রাখুন।";
+      "বিনিয়োগ উদ্যোক্তা অ্যাপে স্বাগতম! নতুন আপডেট পেতে চোখ রাখুন।";
 
   final List<String> banners = [
     'assets/banner1.png',
@@ -218,7 +220,7 @@ class HomeContentState extends State<HomeContent> {
     'assets/banner3.png',
   ];
 
-  // Admin চেক
+  // Admin Permission Check
   bool get isAdmin =>
       userRole.trim().toLowerCase() == 'admin';
 
@@ -623,7 +625,7 @@ class HomeContentState extends State<HomeContent> {
               ),
             ),
 
-            // ৪. লাল বক্স
+            // ৪. বকেয়া বক্স
 
             InkWell(
               onTap: () {
@@ -730,7 +732,7 @@ class HomeContentState extends State<HomeContent> {
 
             const SizedBox(height: 20),
 
-            // ৬. ৪টি কার্ড
+            // ৬. চারটি কার্ড
 
             Padding(
               padding:
@@ -798,9 +800,7 @@ class HomeContentState extends State<HomeContent> {
             const SizedBox(height: 20),
 
             // ৭. চারটি অ্যাকশন বাটন
-            // Admin ও Member উভয়েই দেখতে পারবে।
-            // Member হিস্ট্রি দেখবে।
-            // Add/Edit/Delete অনুমতি পরবর্তী স্ক্রিনে নিয়ন্ত্রণ হবে।
+            // Admin এবং Member উভয়েই দেখতে পারবে।
 
             Padding(
               padding:
@@ -884,6 +884,8 @@ class HomeContentState extends State<HomeContent> {
                       isDark,
                     ),
                   ),
+
+                  // শুধু Admin সদস্য যোগ করতে পারবে।
 
                   if (isAdmin)
                     InkWell(
@@ -1569,9 +1571,9 @@ class HomeContentState extends State<HomeContent> {
     );
   }
 
-  // Admin ও Member উভয়েই বাটন ব্যবহার করতে পারবে।
-  // TransactionListScreen-এ Member-এর জন্য শুধু View অনুমতি থাকবে।
-  // InvestmentScreen-এও একই নিয়ম পরবর্তী ধাপে যোগ করা হবে।
+  // Admin ও Member উভয়েই চারটি বাটন দেখতে পারবে।
+  // Member শুধু হিস্ট্রি দেখবে।
+  // Admin নতুন হিসাব যোগ করতে পারবে।
 
   Widget _buildActionButton(
     BuildContext context,
@@ -1598,6 +1600,7 @@ class HomeContentState extends State<HomeContent> {
               MaterialPageRoute(
                 builder: (c) => TransactionListScreen(
                   type: type,
+                  userRole: userRole,
                 ),
               ),
             );
