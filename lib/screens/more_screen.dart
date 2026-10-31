@@ -40,7 +40,13 @@ class _MoreScreenState extends State<MoreScreen> {
       name = prefs.getString('userName') ?? "User";
       role = prefs.getString('userRole') ?? "Member";
       phone = prefs.getString('userPhone') ?? "";
-      profilePicUrl = prefs.getString('userPic') ?? "";
+      // 🔥 ক্যাশ এড়ানোর জন্য টাইম স্ট্যাম্প
+      String savedPic = prefs.getString('userPic') ?? "";
+      if (savedPic.isNotEmpty) {
+        profilePicUrl = "$savedPic&t=${DateTime.now().millisecondsSinceEpoch}";
+      } else {
+        profilePicUrl = "";
+      }
     });
     _fetchStats();
   }
@@ -48,13 +54,11 @@ class _MoreScreenState extends State<MoreScreen> {
   void _fetchStats() async {
     setState(() => isLoadingStats = true);
     
-    // ১. সদস্য সংখ্যা বের করা
     var membersRes = await ApiService.getAllMembers();
     if (membersRes is List) {
       totalMembers = membersRes.length;
     }
 
-    // ২. নিজের লেনদেন ফিল্টার করা
     var txRes = await ApiService.getTransactions();
     if (txRes is List) {
       List<dynamic> tempMyTx = txRes.where((tx) => tx['MemberName'].toString().trim() == name.trim()).toList();
@@ -75,7 +79,6 @@ class _MoreScreenState extends State<MoreScreen> {
       });
     }
 
-    // ৩. প্রজেক্টের মোট লাভ বের করে সদস্যদের মাঝে ভাগ করা
     var invRes = await ApiService.getInvestments();
     if (invRes is List) {
       double tempTotalProjectProfit = 0.0;
