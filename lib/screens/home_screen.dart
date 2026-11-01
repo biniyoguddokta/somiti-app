@@ -275,6 +275,8 @@ class HomeContentState extends State<HomeContent> {
     return "শুভ রাত্রি";
   }
 
+  // ================= DASHBOARD DATA =================
+
   Future<void> fetchDashboardData() async {
     if (!mounted) return;
 
@@ -292,7 +294,12 @@ class HomeContentState extends State<HomeContent> {
         double tempTodayExpense = 0.0;
         double tempMonthCollection = 0.0;
 
-        int tempTotalTx = response.length;
+        // শুধু Paid লেনদেন গণনা হবে
+        int tempTotalTx = response.where((tx) {
+          String status =
+              tx['Status']?.toString().trim() ?? 'Paid';
+          return status == 'Paid';
+        }).length;
 
         List<dynamic> tempRecent = [];
 
@@ -416,6 +423,8 @@ class HomeContentState extends State<HomeContent> {
       debugPrint("Dashboard Error: $e");
     }
   }
+
+  // ================= BUILD =================
 
   @override
   Widget build(BuildContext context) {
@@ -800,7 +809,6 @@ class HomeContentState extends State<HomeContent> {
             const SizedBox(height: 20),
 
             // ৭. চারটি অ্যাকশন বাটন
-            // Admin এবং Member উভয়েই দেখতে পারবে।
 
             Padding(
               padding:
