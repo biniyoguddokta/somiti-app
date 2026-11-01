@@ -40,7 +40,6 @@ class _LateFeeScreenState extends State<LateFeeScreen> {
     
     if (res is List && memRes is List) {
       setState(() {
-        // 🔥 'বিলম্ব ফী' এবং 'বকেয়া' (অটো) দুটোই ফিল্টার করা হলো
         lateFees = res.where((tx) {
           String type = tx['Type'].toString();
           String note = tx['Note'].toString();
@@ -55,7 +54,6 @@ class _LateFeeScreenState extends State<LateFeeScreen> {
     }
   }
 
-  // 🔥 ম্যানুয়ালি টেস্ট করার জন্য এই ফাংশনটি যোগ করা হলো
   void _generateAutoDue() async {
     setState(() => isLoading = true);
     var res = await ApiService.generateAutoDue(); 
@@ -74,17 +72,6 @@ class _LateFeeScreenState extends State<LateFeeScreen> {
   void _addLateFee() async {
     if (_selectedMember == null || _amountController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("সদস্য এবং পরিমাণ নির্বাচন করুন"), backgroundColor: Colors.orange));
-      return;
-    }
-
-    String currentMonth = DateFormat('yyyy-MM').format(DateTime.now());
-    bool alreadyPaid = lateFees.any((tx) => 
-      tx['MemberName'].toString().trim() == _selectedMember!.trim() &&
-      tx['Date'].toString().contains(currentMonth)
-    );
-
-    if (alreadyPaid) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("$_selectedMember এই মাসে ইতিমধ্যে বিলম্ব ফী দিয়েছেন!"), backgroundColor: Colors.red));
       return;
     }
 
@@ -114,6 +101,47 @@ class _LateFeeScreenState extends State<LateFeeScreen> {
     }
   }
 
+  // 🔥 পপ-আপ দেখানোর ফাংশন
+  void _showConfirmPaymentDialog(String rowIndex, String memberName, String amount) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("নিশ্চিত করুন", style: TextStyle(fontWeight: FontWeight.bold)),
+        content: Text("আপনি কি $memberName এর $amount টাকা পেয়েছেন?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context), 
+            child: const Text("বাতিল", style: TextStyle(color: Colors.grey))
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00796B)),
+            onPressed: () {
+              Navigator.pop(context); // পপ-আপ বন্ধ করবে
+              _processPayment(rowIndex); // পেমেন্ট প্রসেস করবে
+            },
+            child: const Text("কনফার্ম করুন", style: TextStyle(color: Colors.white)),
+          )
+        ],
+      ),
+    );
+  }
+
+  // 🔥 আসল পেমেন্ট প্রসেস (API কল)
+  void _processPayment(String rowIndex) async {
+    setState(() => isLoading = true);
+    var res = await ApiService.updateTransactionStatus(rowIndex: rowIndex, status: 'Paid');
+    
+    if (res['status'] == 'success' || res['message'] == 'Updated' || res['message'].contains("302")) {
+      _fetchData(); // ডেটা রিফ্রেশ করবে
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("সফলভাবে পরিশোধ হয়েছে!"), backgroundColor: Colors.green));
+    } else {
+      setState(() => isLoading = false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("পরিশোধ করতে সমস্যা হয়েছে!"), backgroundColor: Colors.red));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -123,7 +151,6 @@ class _LateFeeScreenState extends State<LateFeeScreen> {
         backgroundColor: const Color(0xFF00796B), 
         foregroundColor: Colors.white,
         actions: [
-          // 🔥 অ্যাডমিনের জন্য ম্যানুয়ালি বকেয়া জেনারেট করার বাটন
           if (userRole == 'Admin')
             IconButton(
               tooltip: "মাসিক বকেয়া জেনারেট করুন",
@@ -189,16 +216,37 @@ class _LateFeeScreenState extends State<LateFeeScreen> {
                                 leading: Icon(Icons.warning, color: isPaid ? Colors.green : Colors.red),
                                 title: Text(fee['MemberName'].toString(), style: const TextStyle(fontWeight: FontWeight.bold)),
                                 subtitle: Text(fee['Note'].toString()),
-                                trailing: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Text("৳ ${fee['Amount']}", style: TextStyle(color: isPaid ? Colors.green : Colors.red, fontWeight: FontWeight.bold)),
-                                    if (isPaid) ...[
-                                      const Text("Paid", style: TextStyle(fontSize: 10, color: Colors.green)),
-                                      Text(fee['Date'].toString().split(' ')[0], style: const TextStyle(fontSize: 10, color: Colors.grey)),
-                                    ] else ...[
-                                      const Text("Unpaid", style: TextStyle(fontSize: 10, color: Colors.red)),
+                                    Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      children: [
+                                        Text("৳ ${fee['Amount']}", style: TextStyle(color: isPaid ? Colors.green : Colors.red, fontWeight: FontWeight.bold)),
+                                        if (isPaid) ...[
+                                          const Text("Paid", style: TextStyle(fontSize: 10, color: Colors.green)),
+                                          Text(fee['Date'].toString().split(' ')[0], style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                                        ] else ...[
+                                          const Text("Unpaid", style: TextStyle(fontSize: 10, color: Colors.red)),
+                                        ]
+                                      ],
+                                    ),
+                                    // 🔥 এখানে পপ-আপ কল করা হলো
+                                    if (!isPaid && userRole == 'Admin') ...[
+                                      const SizedBox(width: 10),
+                                      ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.green,
+                                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                                        ),
+                                        onPressed: () => _showConfirmPaymentDialog(
+                                          fee['RowIndex'].toString(), 
+                                          fee['MemberName'].toString(), 
+                                          fee['Amount'].toString()
+                                        ),
+                                        child: const Text("পরিশোধ", style: TextStyle(color: Colors.white, fontSize: 12)),
+                                      )
                                     ]
                                   ],
                                 ),
