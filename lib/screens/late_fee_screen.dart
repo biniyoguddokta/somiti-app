@@ -40,10 +40,18 @@ class _LateFeeScreenState extends State<LateFeeScreen> {
     
     if (res is List && memRes is List) {
       setState(() {
+        // 🔥 এখানে ফিল্টারিং লজিক আপডেট করা হয়েছে 🔥
         lateFees = res.where((tx) {
           String type = tx['Type'].toString();
           String note = tx['Note'].toString();
-          return type == 'বিলম্ব ফী' || (type == 'বকেয়া' && note.contains('অটো'));
+          
+          // ১. সরাসরি 'বিলম্ব ফী' টাইপ হলে নিবে
+          if (type == 'বিলম্ব ফী') return true;
+          
+          // ২. 'বকেয়া' হলে নোটে অবশ্যই 'বিলম্ব ফী' লেখা থাকতে হবে (মাসিক চাঁদা বাদ দেওয়ার জন্য)
+          if (type == 'বকেয়া' && note.contains('বিলম্ব ফী')) return true;
+          
+          return false;
         }).toList().reversed.toList();
         
         members = memRes;
