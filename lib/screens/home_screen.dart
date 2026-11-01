@@ -1,4 +1,3 @@
-
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
@@ -394,12 +393,19 @@ class HomeContentState extends State<HomeContent> {
           }
         }
 
-        if (response.length > 5) {
-          tempRecent =
-              response.sublist(response.length - 5).reversed.toList();
+        // 🔥 এখানে আপনার দেওয়া নতুন কোডটি বসানো হয়েছে 🔥
+        // শুধুমাত্র Paid (সফল) লেনদেনগুলো ফিল্টার করে সাম্প্রতিক লেনদেন দেখানো হবে
+        List<dynamic> paidTransactions = response.where((tx) {
+          String status = tx['Status']?.toString().trim() ?? 'Paid';
+          return status == 'Paid';
+        }).toList();
+
+        if (paidTransactions.length > 5) {
+          tempRecent = paidTransactions.sublist(paidTransactions.length - 5).reversed.toList();
         } else {
-          tempRecent = response.reversed.toList();
+          tempRecent = paidTransactions.reversed.toList();
         }
+        // 🔥 নতুন কোড শেষ 🔥
 
         setState(() {
           cashInHand = tempCash;
@@ -1578,10 +1584,6 @@ class HomeContentState extends State<HomeContent> {
       ),
     );
   }
-
-  // Admin ও Member উভয়েই চারটি বাটন দেখতে পারবে।
-  // Member শুধু হিস্ট্রি দেখবে।
-  // Admin নতুন হিসাব যোগ করতে পারবে।
 
   Widget _buildActionButton(
     BuildContext context,
